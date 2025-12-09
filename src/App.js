@@ -41,62 +41,111 @@ const App = () => {
 };
 export default App;*/
 
-// App.js
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import AppointmentForm from "./components/AppointmentForm";
 import AppointmentList from "./components/AppointmentList";
+import Statistics from "./components/Statistics";
+import Toast from "./components/Toast";
 
 const App = () => {
   const [appointments, setAppointments] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  // Load appointments from localStorage on mount
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+  };
+
   useEffect(() => {
     const storedAppointments = JSON.parse(localStorage.getItem("appointments"));
+    const storedDarkMode = JSON.parse(localStorage.getItem("darkMode"));
     if (storedAppointments) setAppointments(storedAppointments);
+    if (storedDarkMode) setDarkMode(storedDarkMode);
   }, []);
 
-  // Function to update localStorage
+  useEffect(() => {
+    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    document.body.className = darkMode ? "dark-mode" : "";
+  }, [darkMode]);
+
   const updateLocalStorage = (data) => {
     localStorage.setItem("appointments", JSON.stringify(data));
   };
 
-  const addAppointment = (name, date) => {
-    if (!name || !date) return alert("Please enter both name and date!");
-    const newAppointments = [...appointments, { name, date }];
+  const addAppointment = (name, date, time, email, phone) => {
+    const newAppointment = {
+      id: Date.now(),
+      name,
+      date,
+      time,
+      email,
+      phone,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    const newAppointments = [...appointments, newAppointment];
     setAppointments(newAppointments);
     updateLocalStorage(newAppointments);
+    showToast("✅ Appointment added successfully!", "success");
   };
 
-  const deleteAppointment = (index) => {
-    const updatedAppointments = appointments.filter((_, i) => i !== index);
+  const deleteAppointment = (id) => {
+    const updatedAppointments = appointments.filter((apt) => apt.id !== id);
     setAppointments(updatedAppointments);
     updateLocalStorage(updatedAppointments);
+    showToast("🗑️ Appointment deleted", "info");
   };
 
-  const editAppointment = (index, editedName, editedDate) => {
-    if (!editedName || !editedDate) return alert("Both fields are required!");
-    const updatedAppointments = [...appointments];
-    updatedAppointments[index] = { name: editedName, date: editedDate };
+  const editAppointment = (id, updatedData) => {
+    const updatedAppointments = appointments.map((apt) =>
+      apt.id === id ? { ...apt, ...updatedData } : apt
+    );
     setAppointments(updatedAppointments);
     updateLocalStorage(updatedAppointments);
+    showToast("✏️ Appointment updated", "success");
+  };
+
+  const updateStatus = (id, status) => {
+    const updatedAppointments = appointments.map((apt) =>
+      apt.id === id ? { ...apt, status } : apt
+    );
+    setAppointments(updatedAppointments);
+    updateLocalStorage(updatedAppointments);
+    showToast(`✅ Status changed to ${status}`, "success");
   };
 
   const clearAppointments = () => {
-    setAppointments([]);
-    localStorage.removeItem("appointments");
+    if (window.confirm("Are you sure you want to clear all appointments?")) {
+      setAppointments([]);
+      localStorage.removeItem("appointments");
+    }
   };
 
   return (
-    <div>
-      <h1>Appointments Management System</h1>
+    <div className="app">
+      <header className="app-header">
+        <h1>📅 Appointment Management System</h1>
+        <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)}>
+          {darkMode ? "☀️" : "🌙"}
+        </button>
+      </header>
+      <Statistics appointments={appointments} />
       <AppointmentForm addAppointment={addAppointment} />
       <AppointmentList
         appointments={appointments}
         deleteAppointment={deleteAppointment}
         editAppointment={editAppointment}
+        updateStatus={updateStatus}
         clearAppointments={clearAppointments}
       />
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };
