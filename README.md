@@ -6,7 +6,7 @@
 
 ## 🔗 Live Demo
 
-**[View Live Demo](#)** ← *Add your Vercel/Netlify URL here*
+**[View Live Demo](https://appointment-management-system-flame.vercel.app/)** ← *Add your Vercel/Netlify URL here*
 
 ## 📸 Screenshots
 
