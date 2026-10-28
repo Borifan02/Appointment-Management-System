@@ -1,0 +1,371 @@
+// src/context/AppointmentContext.js
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { INITIAL_SERVICES } from "../data/services";
+import { INITIAL_SPECIALISTS } from "../data/specialists";
+import { getRealisticDemoAppointments } from "../data/demoData";
+import { checkAppointmentConflict, toISODate } from "../utils/calendarUtils";
+
+const AppointmentContext = createContext(null);
+
+const STORAGE_KEYS = {
+  APPOINTMENTS: "medicare_appointments_v2",
+  SERVICES: "medicare_services_v2",
+  SPECIALISTS: "medicare_specialists_v2",
+  DARK_MODE: "medicare_dark_mode_v2"
+};
+
+export const AppointmentProvider = ({ children }) => {
+  // Load initial appointments or populate with realistic demo appointments
+  const [appointments, setAppointments] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.APPOINTMENTS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error("Failed to load appointments from localStorage", e);
+    }
+    return getRealisticDemoAppointments();
+  });
+
+  const [services, setServices] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SERVICES);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_SERVICES;
+  });
+
+  const [specialists, setSpecialists] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SPECIALISTS);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_SPECIALISTS;
+  });
+
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
+      if (saved !== null) return JSON.parse(saved);
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // Navigation State: 'dashboard' | 'calendar' | 'appointments' | 'booking' | 'roster' | 'analytics'
+  const [currentView, setCurrentView] = useState("dashboard");
+  const [selectedDate, setSelectedDate] = useState(toISODate(new Date()));
+
+  // Active modals
+  const [activeModalAppointment, setActiveModalAppointment] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+
+  // Confirmation Modal
+  const [confirmConfig, setConfirmConfig] = useState(null);
+
+  // Toast notification queue
+  const [toasts, setToasts] = useState([]);
+
+  // Sync to LocalStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(appointments));
+    } catch (e) {
+      console.error("Error saving appointments", e);
+    }
+  }, [appointments]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+    } catch (e) {}
+  }, [services]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SPECIALISTS, JSON.stringify(specialists));
+    } catch (e) {}
+  }, [specialists]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.DARK_MODE, JSON.stringify(darkMode));
+    } catch (e) {}
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+      document.body.classList.add("dark-mode");
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.body.classList.remove("dark-mode");
+    }
+  }, [darkMode]);
+
+  // Toast Helper
+  const showToast = useCallback((message, type = "success", duration = 4000) => {
+    const id = Date.now() + Math.random().toString(36).substring(2, 9);
+    const newToast = { id, message, type, timestamp: new Date() };
+    setToasts((prev) => [...prev, newToast]);
+
+    if (duration > 0) {
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, duration);
+    }
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // Modal helpers
+  const openDetailModal = useCallback((appointment) => {
+    setActiveModalAppointment(appointment);
+    setIsDetailModalOpen(true);
+  }, []);
+
+  const closeDetailModal = useCallback(() => {
+    setIsDetailModalOpen(false);
+    setActiveModalAppointment(null);
+  }, []);
+
+  const openEditModal = useCallback((appointment) => {
+    setActiveModalAppointment(appointment);
+    setIsEditModalOpen(true);
+  }, []);
+
+  const closeEditModal = useCallback(() => {
+    setIsEditModalOpen(false);
+    setActiveModalAppointment(null);
+  }, []);
+
+  const openReceiptModal = useCallback((appointment) => {
+    setActiveModalAppointment(appointment);
+    setIsReceiptModalOpen(true);
+  }, []);
+
+  const closeReceiptModal = useCallback(() => {
+    setIsReceiptModalOpen(false);
+  }, []);
+
+  // Confirmation dialog
+  const requestConfirm = useCallback(({ title, message, onConfirm, confirmText = "Confirm", isDanger = false }) => {
+    setConfirmConfig({
+      title,
+      message,
+      confirmText,
+      isDanger,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmConfig(null);
+      },
+      onCancel: () => setConfirmConfig(null)
+    });
+  }, []);
+
+  // CRUD Actions
+  const addAppointment = useCallback((appointmentData) => {
+    const { specialistId, date, time, duration = 30 } = appointmentData;
+
+    // Check for double booking conflict
+    const conflict = checkAppointmentConflict(appointments, specialistId, date, time, duration);
+    if (conflict) {
+      showToast(
+        `⚠️ Time slot conflict: ${conflict.specialistName} already has an appointment with ${conflict.clientName} at ${conflict.time}.`,
+        "error",
+        5000
+      );
+      return { success: false, conflict };
+    }
+
+    const specialist = specialists.find((s) => s.id === specialistId);
+    const service = services.find((srv) => srv.id === appointmentData.serviceId);
+
+    const newAppointment = {
+      id: `apt-${Date.now()}`,
+      referenceCode: `MED-${Math.floor(1000 + Math.random() * 9000)}`,
+      clientName: appointmentData.clientName || appointmentData.name,
+      email: appointmentData.email || "",
+      phone: appointmentData.phone || "",
+      specialistId,
+      specialistName: specialist ? specialist.name : (appointmentData.specialistName || "Assigned Specialist"),
+      serviceId: appointmentData.serviceId,
+      serviceName: service ? service.name : (appointmentData.serviceName || "Consultation"),
+      date,
+      time,
+      duration: duration || (service ? service.duration : 30),
+      price: service ? service.price : (appointmentData.price || 50),
+      status: appointmentData.status || "confirmed",
+      priority: appointmentData.priority || "Routine",
+      room: specialist ? specialist.room : "Suite 101",
+      notes: appointmentData.notes || "",
+      createdAt: new Date().toISOString()
+    };
+
+    setAppointments((prev) => [newAppointment, ...prev]);
+    showToast(`✅ Appointment confirmed for ${newAppointment.clientName}! Reference: ${newAppointment.referenceCode}`, "success");
+    return { success: true, appointment: newAppointment };
+  }, [appointments, specialists, services, showToast]);
+
+  const updateAppointment = useCallback((id, updatedData) => {
+    const existing = appointments.find((a) => a.id === id);
+    if (!existing) return { success: false, message: "Appointment not found" };
+
+    const targetSpecialistId = updatedData.specialistId || existing.specialistId;
+    const targetDate = updatedData.date || existing.date;
+    const targetTime = updatedData.time || existing.time;
+    const targetDuration = updatedData.duration || existing.duration || 30;
+
+    // Conflict check
+    if (targetDate !== existing.date || targetTime !== existing.time || targetSpecialistId !== existing.specialistId) {
+      const conflict = checkAppointmentConflict(appointments, targetSpecialistId, targetDate, targetTime, targetDuration, id);
+      if (conflict) {
+        showToast(
+          `⚠️ Rescheduling conflict: ${conflict.specialistName} already has an appointment with ${conflict.clientName} at ${conflict.time}.`,
+          "error",
+          5000
+        );
+        return { success: false, conflict };
+      }
+    }
+
+    const updatedList = appointments.map((apt) => {
+      if (apt.id === id) {
+        const specialist = specialists.find((s) => s.id === targetSpecialistId);
+        const service = services.find((s) => s.id === (updatedData.serviceId || apt.serviceId));
+        return {
+          ...apt,
+          ...updatedData,
+          specialistName: specialist ? specialist.name : apt.specialistName,
+          serviceName: service ? service.name : apt.serviceName,
+          price: service ? service.price : apt.price,
+          room: specialist ? specialist.room : apt.room,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return apt;
+    });
+
+    setAppointments(updatedList);
+    showToast("✏️ Appointment updated successfully", "success");
+    return { success: true };
+  }, [appointments, specialists, services, showToast]);
+
+  const updateStatus = useCallback((id, newStatus) => {
+    setAppointments((prev) =>
+      prev.map((apt) => (apt.id === id ? { ...apt, status: newStatus, updatedAt: new Date().toISOString() } : apt))
+    );
+    showToast(`Status changed to ${newStatus.toUpperCase()}`, "info");
+  }, [showToast]);
+
+  const deleteAppointment = useCallback((id) => {
+    const apt = appointments.find((a) => a.id === id);
+    const clientName = apt ? (apt.clientName || apt.name) : "Appointment";
+
+    requestConfirm({
+      title: "Delete Appointment",
+      message: `Are you sure you want to permanently delete the appointment for "${clientName}"? This action cannot be undone.`,
+      confirmText: "Yes, Delete",
+      isDanger: true,
+      onConfirm: () => {
+        setAppointments((prev) => prev.filter((a) => a.id !== id));
+        showToast("🗑️ Appointment permanently removed", "info");
+        if (activeModalAppointment && activeModalAppointment.id === id) {
+          closeDetailModal();
+          closeEditModal();
+        }
+      }
+    });
+  }, [appointments, requestConfirm, showToast, activeModalAppointment, closeDetailModal, closeEditModal]);
+
+  const loadDemoData = useCallback(() => {
+    requestConfirm({
+      title: "Load Sample Portfolio Data",
+      message: "This will populate the system with 16 realistic medical appointments, across multiple specialists and services. Current appointments will be refreshed.",
+      confirmText: "Load Demo Data",
+      isDanger: false,
+      onConfirm: () => {
+        const demo = getRealisticDemoAppointments();
+        setAppointments(demo);
+        setServices(INITIAL_SERVICES);
+        setSpecialists(INITIAL_SPECIALISTS);
+        showToast("🎉 Loaded 16 realistic demo appointments successfully!", "success");
+      }
+    });
+  }, [requestConfirm, showToast]);
+
+  const clearAllAppointments = useCallback(() => {
+    requestConfirm({
+      title: "Clear All Appointments",
+      message: "Are you sure you want to remove all appointments from storage? This cannot be undone.",
+      confirmText: "Clear Everything",
+      isDanger: true,
+      onConfirm: () => {
+        setAppointments([]);
+        showToast("🧹 All appointment records cleared", "info");
+      }
+    });
+  }, [requestConfirm, showToast]);
+
+  const importBackupData = useCallback((backupData) => {
+    try {
+      if (!backupData || !Array.isArray(backupData.appointments)) {
+        throw new Error("Invalid structure: missing appointments array");
+      }
+      setAppointments(backupData.appointments);
+      if (Array.isArray(backupData.services)) setServices(backupData.services);
+      if (Array.isArray(backupData.specialists)) setSpecialists(backupData.specialists);
+      showToast(`📦 Successfully imported ${backupData.appointments.length} appointments from backup!`, "success");
+    } catch (e) {
+      showToast(`❌ Import error: ${e.message}`, "error");
+    }
+  }, [showToast]);
+
+  const value = {
+    appointments,
+    services,
+    specialists,
+    darkMode,
+    setDarkMode,
+    currentView,
+    setCurrentView,
+    selectedDate,
+    setSelectedDate,
+    toasts,
+    showToast,
+    removeToast,
+    activeModalAppointment,
+    isDetailModalOpen,
+    openDetailModal,
+    closeDetailModal,
+    isEditModalOpen,
+    openEditModal,
+    closeEditModal,
+    isReceiptModalOpen,
+    openReceiptModal,
+    closeReceiptModal,
+    confirmConfig,
+    requestConfirm,
+    addAppointment,
+    updateAppointment,
+    updateStatus,
+    deleteAppointment,
+    loadDemoData,
+    clearAllAppointments,
+    importBackupData
+  };
+
+  return <AppointmentContext.Provider value={value}>{children}</AppointmentContext.Provider>;
+};
+
+export const useAppointments = () => {
+  const context = useContext(AppointmentContext);
+  if (!context) {
+    throw new Error("useAppointments must be used within an AppointmentProvider");
+  }
+  return context;
+};

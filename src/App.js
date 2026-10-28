@@ -1,152 +1,106 @@
-// App.js
-/*
+// src/App.js
 import React, { useState } from "react";
 import "./App.css";
-import AppointmentForm from "./components/AppointmentForm";
-import AppointmentList from "./components/AppointmentList";
+import { AppointmentProvider, useAppointments } from "./context/AppointmentContext";
+import Navbar from "./components/layout/Navbar";
+import Sidebar from "./components/layout/Sidebar";
+import DashboardOverview from "./components/dashboard/DashboardOverview";
+import CalendarView from "./components/calendar/CalendarView";
+import AppointmentsTable from "./components/appointments/AppointmentsTable";
+import ClientBookingWizard from "./components/booking/ClientBookingWizard";
+import StaffAndServices from "./components/roster/StaffAndServices";
+import AnalyticsView from "./components/analytics/AnalyticsView";
 
-const App = () => {
-  const [appointments, setAppointments] = useState([]);
-  const addAppointment = (appointment) => {
-    setAppointments([...appointments, appointment]);
+// Modals & Notifications
+import AppointmentDetailModal from "./components/appointments/AppointmentDetailModal";
+import EditAppointmentModal from "./components/appointments/EditAppointmentModal";
+import AppointmentReceipt from "./components/appointments/AppointmentReceipt";
+import ConfirmModal from "./components/common/ConfirmModal";
+import ToastContainer from "./components/common/Toast";
+
+const MainAppLayout = () => {
+  const { currentView } = useAppointments();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Prefill state for booking wizard (e.g., when clicking a calendar slot or specialist)
+  const [bookingPrefill, setBookingPrefill] = useState({ date: null, time: null });
+
+  const handlePrefillBooking = (date, time) => {
+    setBookingPrefill({ date, time });
   };
-  const deleteAppointment = (index) => {
-    const deletetedAppointments = [...appointments];
-    deletetedAppointments.splice(index, 1);
-    setAppointments(deletetedAppointments);
-  };
-  const editAppointment = (index, editedName, editedDate) => {
-    const updatedAppointments = [...appointments];
-    updatedAppointments[index] = {
-      name: editedName,
-      date: editedDate,
-    };
-    setAppointments(updatedAppointments);
-  };
-  const clearAppointments = () => {
-    setAppointments([]);
-  };
+
   return (
-    <div>
-      <h1>Appointments Management System</h1>
-      <AppointmentForm addAppointment={addAppointment} />
-      <AppointmentList
-        appointments={appointments}
-        deleteAppointment={deleteAppointment}
-        clearAppointments={clearAppointments}
-        editAppointment={editAppointment}
+    <div className="app-root">
+      {/* Top Navigation */}
+      <Navbar
+        isMobileMenuOpen={isMobileMenuOpen}
+        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
+
+      <div className="app-container">
+        {/* Navigation Sidebar */}
+        <Sidebar
+          isOpen={isMobileMenuOpen}
+          onCloseMobileMenu={() => setIsMobileMenuOpen(false)}
+        />
+
+        {/* Backdrop for mobile drawer */}
+        {isMobileMenuOpen && (
+          <div
+            className="mobile-backdrop"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
+        {/* Main Dynamic Viewport */}
+        <main className="main-content-area">
+          {currentView === "dashboard" && <DashboardOverview />}
+
+          {currentView === "calendar" && (
+            <CalendarView onPrefillBooking={handlePrefillBooking} />
+          )}
+
+          {currentView === "appointments" && <AppointmentsTable />}
+
+          {currentView === "booking" && (
+            <ClientBookingWizard
+              prefillDate={bookingPrefill.date}
+              prefillTime={bookingPrefill.time}
+            />
+          )}
+
+          {currentView === "roster" && (
+            <StaffAndServices
+              onSelectSpecialistForBooking={(specId) => {
+                // can trigger wizard prefill
+              }}
+              onSelectServiceForBooking={(srvId) => {
+                // can trigger wizard prefill
+              }}
+            />
+          )}
+
+          {currentView === "analytics" && <AnalyticsView />}
+        </main>
+      </div>
+
+      {/* Global Interactive Modals */}
+      <AppointmentDetailModal />
+      <EditAppointmentModal />
+      <AppointmentReceipt />
+      <ConfirmModal />
+
+      {/* Global Animated Toast Notifications */}
+      <ToastContainer />
     </div>
   );
 };
-export default App;*/
-
-import React, { useState, useEffect } from "react";
-import "./App.css";
-import AppointmentForm from "./components/AppointmentForm";
-import AppointmentList from "./components/AppointmentList";
-import Statistics from "./components/Statistics";
-import Toast from "./components/Toast";
 
 const App = () => {
-  const [appointments, setAppointments] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
-  const [toast, setToast] = useState(null);
-
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-  };
-
-  useEffect(() => {
-    const storedAppointments = JSON.parse(localStorage.getItem("appointments"));
-    const storedDarkMode = JSON.parse(localStorage.getItem("darkMode"));
-    if (storedAppointments) setAppointments(storedAppointments);
-    if (storedDarkMode) setDarkMode(storedDarkMode);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("darkMode", JSON.stringify(darkMode));
-    document.body.className = darkMode ? "dark-mode" : "";
-  }, [darkMode]);
-
-  const updateLocalStorage = (data) => {
-    localStorage.setItem("appointments", JSON.stringify(data));
-  };
-
-  const addAppointment = (name, date, time, email, phone) => {
-    const newAppointment = {
-      id: Date.now(),
-      name,
-      date,
-      time,
-      email,
-      phone,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-    const newAppointments = [...appointments, newAppointment];
-    setAppointments(newAppointments);
-    updateLocalStorage(newAppointments);
-    showToast("✅ Appointment added successfully!", "success");
-  };
-
-  const deleteAppointment = (id) => {
-    const updatedAppointments = appointments.filter((apt) => apt.id !== id);
-    setAppointments(updatedAppointments);
-    updateLocalStorage(updatedAppointments);
-    showToast("🗑️ Appointment deleted", "info");
-  };
-
-  const editAppointment = (id, updatedData) => {
-    const updatedAppointments = appointments.map((apt) =>
-      apt.id === id ? { ...apt, ...updatedData } : apt
-    );
-    setAppointments(updatedAppointments);
-    updateLocalStorage(updatedAppointments);
-    showToast("✏️ Appointment updated", "success");
-  };
-
-  const updateStatus = (id, status) => {
-    const updatedAppointments = appointments.map((apt) =>
-      apt.id === id ? { ...apt, status } : apt
-    );
-    setAppointments(updatedAppointments);
-    updateLocalStorage(updatedAppointments);
-    showToast(`✅ Status changed to ${status}`, "success");
-  };
-
-  const clearAppointments = () => {
-    if (window.confirm("Are you sure you want to clear all appointments?")) {
-      setAppointments([]);
-      localStorage.removeItem("appointments");
-    }
-  };
-
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>📅 Appointment Management System</h1>
-        <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)}>
-          {darkMode ? "☀️" : "🌙"}
-        </button>
-      </header>
-      <Statistics appointments={appointments} />
-      <AppointmentForm addAppointment={addAppointment} />
-      <AppointmentList
-        appointments={appointments}
-        deleteAppointment={deleteAppointment}
-        editAppointment={editAppointment}
-        updateStatus={updateStatus}
-        clearAppointments={clearAppointments}
-      />
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-    </div>
+    <AppointmentProvider>
+      <MainAppLayout />
+    </AppointmentProvider>
   );
 };
 
