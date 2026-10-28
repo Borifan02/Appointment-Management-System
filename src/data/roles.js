@@ -3,6 +3,8 @@ export const SYSTEM_ROLES = {
   admin: {
     id: "admin",
     name: "Dr. Catherine Hayes",
+    email: "admin@medicare.com",
+    demoPassword: "AdminPassword123!",
     roleLabel: "Clinic Director (Admin)",
     badgeClass: "role-badge-admin",
     icon: "🛡️",
@@ -23,6 +25,8 @@ export const SYSTEM_ROLES = {
   doctor: {
     id: "doctor",
     name: "Dr. Evelyn Reed",
+    email: "doctor.reed@medicare.com",
+    demoPassword: "DoctorPassword123!",
     roleLabel: "Senior Physician",
     specialistId: "spec-1", // Links to Dr. Evelyn Reed in specialists.js
     badgeClass: "role-badge-doctor",
@@ -44,6 +48,8 @@ export const SYSTEM_ROLES = {
   receptionist: {
     id: "receptionist",
     name: "Sarah Jenkins",
+    email: "reception@medicare.com",
+    demoPassword: "StaffPassword123!",
     roleLabel: "Receptionist / Front Desk",
     badgeClass: "role-badge-receptionist",
     icon: "📋",
@@ -64,14 +70,16 @@ export const SYSTEM_ROLES = {
   patient: {
     id: "patient",
     name: "Eleanor Vance",
-    roleLabel: "Patient Portal",
+    email: "eleanor.vance@example.com",
     clientEmail: "eleanor.vance@example.com",
+    demoPassword: "PatientPassword123!",
+    roleLabel: "Patient Portal",
     badgeClass: "role-badge-patient",
     icon: "👤",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80",
     description: "Patient client portal: self-service consultation booking, personal upcoming visits, calendar passes (.ICS), and printable slips.",
-    allowedViews: ["patient-portal", "booking"],
-    defaultView: "patient-portal",
+    allowedViews: ["dashboard", "booking"],
+    defaultView: "dashboard",
     permissions: {
       canViewFinancials: false,
       canDeleteAppointments: false,

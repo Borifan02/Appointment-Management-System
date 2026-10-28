@@ -3,37 +3,62 @@
 > A production-grade, full-featured appointment scheduling, roster management, and healthcare operations platform built with modern **React 19**, **CSS Design Tokens**, and **Automated Jest Testing**.
 
 [![React 19](https://img.shields.io/badge/React-19.1.0-61dafb?logo=react&logoColor=black)](https://react.dev/)
-[![Jest Tests](https://img.shields.io/badge/Tests-13%20Passed-success?logo=jest)](https://jestjs.io/)
+[![Node.js Express](https://img.shields.io/badge/Backend-Node.js%20%7C%20Express.js-green?logo=node.js)](server/README.md)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB%20%7C%20Mongoose-47A248?logo=mongodb)](server/README.md)
+[![Jest Tests](https://img.shields.io/badge/Tests-16%20Passed-success?logo=jest)](https://jestjs.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Production Build](https://img.shields.io/badge/Production%20Build-Optimized-brightgreen)](#build-for-production)
-[![Code Quality](https://img.shields.io/badge/Architecture-Modular%20Context%20API-blueviolet)](#architecture)
+[![RBAC System](https://img.shields.io/badge/Security-RBAC%20%2B%20JWT-blueviolet)](#role-based-access-control-rbac)
 
 ---
 
 ## 🌟 Overview & Portfolio Highlights
 
-**MediCare Hub** is an enterprise-grade appointment management platform designed to replace fragile single-page forms with a complete, multi-role clinical workflow system. It demonstrates senior-level frontend architecture, data modeling, conflict detection algorithms, and calendar integration that hiring managers and engineering teams look for.
+**MediCare Hub** is an enterprise-grade appointment management platform designed to replace fragile single-page forms with a complete, multi-role clinical workflow system. It demonstrates senior-level full-stack architecture, Role-Based Access Control (RBAC), customized role dashboards, conflict detection algorithms, and seamless integration between a modern React frontend and a robust **Node.js / Express.js + MongoDB** backend.
 
 ### 💼 Why This Stands Out in a Developer Portfolio
-1. **Interactive Monthly Calendar & Hourly Timeline**: Custom 35/42-cell calendar grid with status pills, day-level schedule inspection, and 8:00 AM – 6:00 PM hourly slot timelines with click-to-book capabilities.
-2. **Role-Based Access Control (RBAC) Architecture**: 4 interactive personas (**🛡️ Clinic Admin**, **👨‍⚕️ Physician / Doctor**, **📋 Receptionist / Front Desk**, **👤 Patient Client Portal**) with dedicated permission-gated navigation, data isolation, and a 1-click persona switcher in the navbar.
-3. **Conflict Detection & Smart Availability Engine**: Real-time overlapping interval calculations (`[start1, end1]` vs `[start2, end2]`) preventing physician double-booking based on customized working hours and appointment durations.
-4. **5-Step Client Self-Service Booking Wizard**: Multi-step booking experience featuring dynamic doctor matching, real-time slot generation, patient intake form, and immediate confirmation with reference code.
-5. **iCalendar (.ICS) Standard Protocol**: Generates standard RFC-5545 `.ics` event files on the fly, allowing patients to import appointments directly into **Google Calendar**, **Apple Calendar**, and **Microsoft Outlook**.
-6. **Printable Official Visit Slip / Receipt**: Styled printable appointment pass featuring clinic branding, patient details, fee breakdown, consultation room, and simulated SVG barcode.
-7. **Analytics & Financial Dashboard**: Executive KPI cards, real-time revenue calculations, visual segmented progress bar for status distribution, peak-hours heatmap (morning/afternoon/evening), and provider workload charts.
-8. **Comprehensive Registry with Multi-Filters & Pagination**: Instant debounce-free search, status dropdowns, specialist filters, date ranges (Today, Upcoming, Past), sorting (Date, Name, Fee, Status), and pagination (5/10/20 per page).
-9. **100% Automated Test Coverage**: Unit and integration test suite (15 passed tests) covering calendar utilities, time conversions, overlap algorithms, conflict detection, and RBAC view switching.
+1. **4 Clear, Dedicated User Dashboards**: Unlike generic apps that show identical screens to every user, MediCare Hub provides tailor-made workspaces:
+   - 🛡️ **Clinic Director / Admin Dashboard**: High-level healthcare analytics, gross revenue metrics, provider utilization, clinic-wide schedule, and database administration.
+   - 👨‍⚕️ **Doctor Clinical Workspace**: Senior physician dashboard (Dr. Evelyn Reed) with personal consultation queue, status transitions (Confirmed ➔ In-Progress ➔ Completed), and clinical diagnosis notes editor.
+   - 📋 **Front Desk Receptionist Concierge**: Daily arrival intake desk, room directory, walk-in booking, and 1-click visit pass printing.
+   - 👤 **Patient Client Self-Service Portal**: Hero card for next upcoming visit, instant RFC-5545 `.ics` calendar pass download, printable slip, and personal visit history.
+2. **Interactive Persona Switcher & Full Authentication System**: Seamlessly switch between the 4 personas with a 1-click navbar switcher OR sign in with credentials via the secure modal (complete with password strength metering and client registration).
+3. **Full-Stack Architecture with Node.js, Express & MongoDB**: Built with a dedicated backend (`server/`) containing Mongoose models (`User`, `Appointment`), JWT authentication, conflict checking middleware, and database seeder.
+4. **Double-Booking Prevention Algorithm**: Real-time overlapping interval calculations (`[start1, end1]` vs `[start2, end2]`) preventing physician double-booking based on customized working hours and appointment durations.
+5. **Interactive Monthly Calendar & Hourly Timeline**: Custom 35/42-cell calendar grid with status pills, day-level schedule inspection, and 8:00 AM – 6:00 PM hourly slot timelines with click-to-book capabilities.
+6. **5-Step Client Self-Service Booking Wizard**: Multi-step booking experience featuring dynamic doctor matching, real-time slot generation, patient intake form, and immediate confirmation with reference code.
+7. **iCalendar (.ICS) Standard Protocol**: Generates standard RFC-5545 `.ics` event files on the fly, allowing patients to import appointments directly into **Google Calendar**, **Apple Calendar**, and **Microsoft Outlook**.
+8. **Printable Official Visit Slip / Receipt**: Styled printable appointment pass featuring clinic branding, patient details, fee breakdown, consultation room, and simulated SVG barcode.
+9. **Master Registry with Multi-Filters & Pagination**: Instant debounce-free search, status dropdowns, specialist filters, date ranges (Today, Upcoming, Past), sorting (Date, Name, Fee, Status), and pagination (5/10/20 per page).
+10. **100% Automated Test Coverage**: Unit and integration test suite (16 passed tests) covering calendar utilities, time conversions, overlap algorithms, conflict detection, Auth modal, and RBAC view switching.
 
 ---
 
-## 📸 Core Modules & User Interface
+## 📸 4 Distinct User Dashboards
 
-### 1. Executive Operations Dashboard
-- High-level KPI cards: Total Bookings, Today's Schedule count, Total Booked Revenue, and Completion Rate.
-- Live Today's Schedule timeline with one-click status transitions (Confirm, In-Progress, Complete).
-- Specialists on Duty roster preview with real-time daily visit counts.
-- Next upcoming bookings drawer.
+### 🛡️ 1. Clinic Director / Admin Dashboard
+- **Executive KPIs**: Total Bookings, Today's Schedule count, Gross Booked Revenue ($), and Completion Rate (%).
+- **Clinic-Wide Schedule**: Live timeline across all physicians with 1-click status updates and patient record inspection.
+- **Provider Roster Utilization**: Real-time load breakdown per doctor.
+- **Data Tools**: 1-click CSV data export and JSON backup & restore.
+
+### 👨‍⚕️ 2. Doctor / Physician Clinical Workspace
+- **Personalized Patient Queue**: Filters exclusively for the active physician (e.g. Dr. Evelyn Reed).
+- **Duty Details**: Display assigned consultation room (e.g. Suite 101) and active duty hours.
+- **Clinical Diagnosis Notes**: Dedicated note editor with permission locks.
+- **Direct Status Progression**: Move patients from Confirmed to In-Progress to Completed as consultations happen.
+
+### 📋 3. Receptionist / Front Desk Concierge
+- **Patient Intake Desk**: Check-in arrivals counter, pending intake tracker, and completed consultation counter.
+- **Fast Walk-In Registration**: 1-click shortcut to register walk-in patients.
+- **1-Click Visit Slip Printer**: Instantly open and print official clinic arrival receipts.
+- **Room Directory**: View consultation room assignments for each specialist.
+
+### 👤 4. Patient Client Self-Service Portal
+- **Hero Card**: Highlights the patient's next upcoming appointment with countdown and doctor details.
+- **Digital Passes**: 1-click download of `.ICS` calendar invite for Google Calendar/Outlook/Apple Calendar.
+- **Printable Pass**: Open official patient pass for clinic arrival.
+- **Complete History**: Chronological table of all past and upcoming consultations.
 
 ### 2. Interactive Calendar & Day Timeline
 - Monthly view with month/year navigation, today highlighter, and appointment count indicators.
@@ -127,23 +152,32 @@ src/
 - **Node.js**: v18.0.0 or higher
 - **npm**: v9.0.0 or higher
 
-### Installation
+### Installation & Running the Full Stack
 
+#### Option A: Run Frontend (Standalone with Mock Service Layer)
 ```bash
-# 1. Clone the repository
+# 1. Clone repository
 git clone https://github.com/Borifan02/Appointment-Management-System.git
-
-# 2. Enter directory
 cd Appointment-Management-System
 
-# 3. Install dependencies
+# 2. Install dependencies & start
 npm install
-
-# 4. Start local development server
 npm start
 ```
+Open [http://localhost:3000](http://localhost:3000) in your browser. All features work immediately with local persistence and realistic clinical demo data.
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+#### Option B: Run Full Stack (React + Node.js/Express + MongoDB)
+```bash
+# Terminal 1: Start Express.js + MongoDB API Server
+cd server
+npm install
+npm run dev
+
+# Terminal 2: Start React Frontend
+cd ..
+npm start
+```
+The React frontend automatically connects to the backend API at `http://localhost:5000/api`. See [server/README.md](server/README.md) for complete API documentation.
 
 ### Running Automated Tests
 
@@ -151,7 +185,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 npm test -- --watchAll=false
 ```
 
-All 15 automated tests will run and output verification results.
+All 16 automated tests will run and output verification results.
 
 ### Production Build
 

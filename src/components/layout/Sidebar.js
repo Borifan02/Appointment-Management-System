@@ -14,7 +14,8 @@ const Sidebar = ({ isOpen, onCloseMobileMenu }) => {
     canAccessView,
     hasPermission,
     importBackupData,
-    clearAllAppointments
+    clearAllAppointments,
+    openAuthModal
   } = useAppointments();
 
   const fileInputRef = useRef(null);
@@ -73,6 +74,15 @@ const Sidebar = ({ isOpen, onCloseMobileMenu }) => {
             {currentRole.icon} {currentRole.roleLabel}
           </span>
         </div>
+        <button
+          type="button"
+          className="sidebar-user-switch-btn"
+          onClick={() => openAuthModal("login")}
+          title="Sign In or Switch Account"
+          aria-label="Sign In or Switch Account"
+        >
+          🔑
+        </button>
       </div>
 
       <div className="sidebar-section-title">AUTHORIZED MODULES</div>

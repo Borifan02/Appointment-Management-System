@@ -11,7 +11,8 @@ const Navbar = ({ onToggleMobileMenu, isMobileMenuOpen }) => {
     loadDemoData,
     appointments,
     currentRole,
-    switchRole
+    switchRole,
+    openAuthModal
   } = useAppointments();
 
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
@@ -125,9 +126,41 @@ const Navbar = ({ onToggleMobileMenu, isMobileMenuOpen }) => {
                   );
                 })}
               </div>
+
+              <div className="dropdown-menu-footer">
+                <button
+                  type="button"
+                  className="dropdown-auth-btn"
+                  onClick={() => {
+                    setIsRoleDropdownOpen(false);
+                    openAuthModal("login");
+                  }}
+                >
+                  <span>🔑</span> Sign In With Password
+                </button>
+                <button
+                  type="button"
+                  className="dropdown-auth-btn secondary"
+                  onClick={() => {
+                    setIsRoleDropdownOpen(false);
+                    openAuthModal("register");
+                  }}
+                >
+                  <span>📝</span> Register Account
+                </button>
+              </div>
             </div>
           )}
         </div>
+
+        {/* Dedicated Sign In / Auth Button */}
+        <button
+          className="btn-pill btn-auth-pill"
+          onClick={() => openAuthModal("login")}
+          title="Sign in or register a new user account"
+        >
+          <span>🔑</span> Sign In
+        </button>
 
         {/* Demo Data button (Admin / Staff) */}
         {currentRole.id !== "patient" && (

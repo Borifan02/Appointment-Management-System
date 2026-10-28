@@ -17,8 +17,8 @@ describe("Appointment Management System App", () => {
 
   test("renders executive dashboard view by default", () => {
     render(<App />);
-    expect(screen.getByText(/Clinical Operations Overview/i)).toBeInTheDocument();
-    expect(screen.getByText(/Total Bookings/i)).toBeInTheDocument();
+    expect(screen.getByText(/Clinic Management & Performance Overview/i)).toBeInTheDocument();
+    expect(screen.getByText(/Clinic Bookings/i)).toBeInTheDocument();
   });
 
   test("navigates to Appointments Registry view", () => {
@@ -66,7 +66,7 @@ describe("Appointment Management System App", () => {
     fireEvent.click(doctorOption);
 
     // Verify view updates to Physician schedule
-    expect(screen.getByText(/Physician Clinical Schedule/i)).toBeInTheDocument();
+    expect(screen.getByText(/PHYSICIAN CLINICAL WORKSPACE/i)).toBeInTheDocument();
     expect(screen.getByText(/Restricted to Dr. Evelyn Reed's schedule/i)).toBeInTheDocument();
   });
 
@@ -82,6 +82,22 @@ describe("Appointment Management System App", () => {
     // Verify patient portal view renders
     expect(screen.getByText(/Welcome back, Eleanor Vance!/i)).toBeInTheDocument();
     expect(screen.getByText(/Your Complete Visit History/i)).toBeInTheDocument();
+  });
+
+  test("opens AuthModal and allows switching between Sign In and Register tabs", () => {
+    render(<App />);
+    const signInBtns = screen.getAllByRole("button", { name: /Sign In/i });
+    fireEvent.click(signInBtns[0]);
+
+    expect(screen.getByText(/MediCare Hub Authentication/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sign In \(Login\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Create New Account/i)).toBeInTheDocument();
+
+    // Switch to Register tab
+    const registerTabBtn = screen.getByRole("button", { name: /Create New Account/i });
+    fireEvent.click(registerTabBtn);
+    expect(screen.getByText(/Account Type \/ Role/i)).toBeInTheDocument();
+    expect(screen.getByText(/Patient Account/i)).toBeInTheDocument();
   });
 
   test("toggles dark mode", () => {

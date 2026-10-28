@@ -78,6 +78,11 @@ export const AppointmentProvider = ({ children }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
+  // Authentication State & Modal
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState("login");
+  const [currentUser, setCurrentUser] = useState(() => currentRole);
+
   // Confirmation Modal
   const [confirmConfig, setConfirmConfig] = useState(null);
 
@@ -191,6 +196,112 @@ export const AppointmentProvider = ({ children }) => {
   const closeReceiptModal = useCallback(() => {
     setIsReceiptModalOpen(false);
   }, []);
+
+  // Authentication Helpers & Methods
+  const openAuthModal = useCallback((tab = "login") => {
+    setAuthModalTab(tab);
+    setIsAuthModalOpen(true);
+  }, []);
+
+  const closeAuthModal = useCallback(() => {
+    setIsAuthModalOpen(false);
+  }, []);
+
+  const login = useCallback(
+    (email, password) => {
+      const trimmedEmail = (email || "").trim().toLowerCase();
+
+      // Check system roles demo users
+      const matchedRole = Object.values(SYSTEM_ROLES).find(
+        (r) => r.email.toLowerCase() === trimmedEmail
+      );
+
+      if (matchedRole) {
+        setCurrentRole(matchedRole);
+        setCurrentUser(matchedRole);
+        if (!matchedRole.allowedViews.includes(currentView)) {
+          setCurrentView(matchedRole.defaultView);
+        }
+        showToast(`Signed in as ${matchedRole.name} (${matchedRole.roleLabel})`, "success", 4000);
+        return { success: true, user: matchedRole };
+      }
+
+      // Check custom registered users in localStorage
+      try {
+        const savedUsers = JSON.parse(localStorage.getItem("medicare_registered_users") || "[]");
+        const found = savedUsers.find((u) => u.email.toLowerCase() === trimmedEmail);
+        if (found) {
+          const baseRole = SYSTEM_ROLES[found.role] || SYSTEM_ROLES.patient;
+          const customRole = {
+            ...baseRole,
+            name: found.name,
+            email: found.email,
+            phone: found.phone,
+            clientEmail: found.email
+          };
+          setCurrentRole(customRole);
+          setCurrentUser(customRole);
+          if (!customRole.allowedViews.includes(currentView)) {
+            setCurrentView(customRole.defaultView);
+          }
+          showToast(`Welcome back, ${customRole.name}!`, "success", 4000);
+          return { success: true, user: customRole };
+        }
+      } catch (e) {}
+
+      return {
+        success: false,
+        message: "No matching account found with that email. Try a demo account or click 'Create New Account'."
+      };
+    },
+    [currentView, showToast]
+  );
+
+  const signup = useCallback(
+    (userData) => {
+      const { name, email, phone, role = "patient" } = userData;
+      const trimmedEmail = (email || "").trim().toLowerCase();
+
+      const newUser = {
+        id: `usr-${Date.now()}`,
+        name,
+        email: trimmedEmail,
+        phone,
+        role,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        const savedUsers = JSON.parse(localStorage.getItem("medicare_registered_users") || "[]");
+        const filtered = savedUsers.filter((u) => u.email.toLowerCase() !== trimmedEmail);
+        localStorage.setItem("medicare_registered_users", JSON.stringify([newUser, ...filtered]));
+      } catch (e) {}
+
+      const baseRole = SYSTEM_ROLES[role] || SYSTEM_ROLES.patient;
+      const customRole = {
+        ...baseRole,
+        name,
+        email: trimmedEmail,
+        phone,
+        clientEmail: trimmedEmail
+      };
+
+      setCurrentRole(customRole);
+      setCurrentUser(customRole);
+      setCurrentView(customRole.defaultView || "dashboard");
+      showToast(`🎉 Welcome to MediCare Hub, ${name}! Your account is active.`, "success", 5000);
+      return { success: true, user: customRole };
+    },
+    [showToast]
+  );
+
+  const logout = useCallback(() => {
+    setCurrentRole(SYSTEM_ROLES.patient);
+    setCurrentUser(null);
+    setCurrentView("patient-portal");
+    showToast("You have been signed out.", "info");
+    setIsAuthModalOpen(true);
+  }, [showToast]);
 
   // Confirmation dialog
   const requestConfirm = useCallback(({ title, message, onConfirm, confirmText = "Confirm", isDanger = false }) => {
@@ -408,6 +519,15 @@ export const AppointmentProvider = ({ children }) => {
     isReceiptModalOpen,
     openReceiptModal,
     closeReceiptModal,
+    isAuthModalOpen,
+    authModalTab,
+    setAuthModalTab,
+    openAuthModal,
+    closeAuthModal,
+    currentUser,
+    login,
+    signup,
+    logout,
     confirmConfig,
     requestConfirm,
     addAppointment,
