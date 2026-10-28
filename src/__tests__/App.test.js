@@ -47,13 +47,41 @@ describe("Appointment Management System App", () => {
     expect(screen.getByRole("heading", { name: /Select a Consultation or Service/i })).toBeInTheDocument();
   });
 
-  test("navigates to Analytics & Reports view", () => {
+  test("navigates to Analytics & Reports view in Admin mode", () => {
     render(<App />);
     const analyticsNavBtn = screen.getByRole("button", { name: /Analytics & Reports/i });
     fireEvent.click(analyticsNavBtn);
 
     expect(screen.getByText(/Clinical & Financial Performance Analytics/i)).toBeInTheDocument();
     expect(screen.getByText(/Gross Booked Value/i)).toBeInTheDocument();
+  });
+
+  test("switches role to Doctor and updates clinical schedule", () => {
+    render(<App />);
+    const roleSwitcherBtn = screen.getByLabelText(/Switch Role/i);
+    fireEvent.click(roleSwitcherBtn);
+
+    // Target the Doctor role option by its role description
+    const doctorOption = screen.getByText(/Physician portal: access to personal calendar/i);
+    fireEvent.click(doctorOption);
+
+    // Verify view updates to Physician schedule
+    expect(screen.getByText(/Physician Clinical Schedule/i)).toBeInTheDocument();
+    expect(screen.getByText(/Restricted to Dr. Evelyn Reed's schedule/i)).toBeInTheDocument();
+  });
+
+  test("switches role to Patient and navigates to Patient Portal", () => {
+    render(<App />);
+    const roleSwitcherBtn = screen.getByLabelText(/Switch Role/i);
+    fireEvent.click(roleSwitcherBtn);
+
+    // Target Patient role option by its description
+    const patientOption = screen.getByText(/Patient client portal: self-service consultation booking/i);
+    fireEvent.click(patientOption);
+
+    // Verify patient portal view renders
+    expect(screen.getByText(/Welcome back, Eleanor Vance!/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your Complete Visit History/i)).toBeInTheDocument();
   });
 
   test("toggles dark mode", () => {

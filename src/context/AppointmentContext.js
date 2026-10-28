@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { INITIAL_SERVICES } from "../data/services";
 import { INITIAL_SPECIALISTS } from "../data/specialists";
 import { getRealisticDemoAppointments } from "../data/demoData";
+import { SYSTEM_ROLES } from "../data/roles";
 import { checkAppointmentConflict, toISODate } from "../utils/calendarUtils";
 
 const AppointmentContext = createContext(null);
@@ -11,7 +12,8 @@ const STORAGE_KEYS = {
   APPOINTMENTS: "medicare_appointments_v2",
   SERVICES: "medicare_services_v2",
   SPECIALISTS: "medicare_specialists_v2",
-  DARK_MODE: "medicare_dark_mode_v2"
+  DARK_MODE: "medicare_dark_mode_v2",
+  ACTIVE_ROLE: "medicare_active_role_v2"
 };
 
 export const AppointmentProvider = ({ children }) => {
@@ -55,8 +57,19 @@ export const AppointmentProvider = ({ children }) => {
     }
   });
 
-  // Navigation State: 'dashboard' | 'calendar' | 'appointments' | 'booking' | 'roster' | 'analytics'
-  const [currentView, setCurrentView] = useState("dashboard");
+  // Active User Role: 'admin' | 'doctor' | 'receptionist' | 'patient'
+  const [currentRole, setCurrentRole] = useState(() => {
+    try {
+      const savedRole = localStorage.getItem(STORAGE_KEYS.ACTIVE_ROLE);
+      if (savedRole && SYSTEM_ROLES[savedRole]) {
+        return SYSTEM_ROLES[savedRole];
+      }
+    } catch (e) {}
+    return SYSTEM_ROLES.admin;
+  });
+
+  // Navigation State
+  const [currentView, setCurrentView] = useState(() => currentRole.defaultView || "dashboard");
   const [selectedDate, setSelectedDate] = useState(toISODate(new Date()));
 
   // Active modals
@@ -75,9 +88,7 @@ export const AppointmentProvider = ({ children }) => {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(appointments));
-    } catch (e) {
-      console.error("Error saving appointments", e);
-    }
+    } catch (e) {}
   }, [appointments]);
 
   useEffect(() => {
@@ -91,6 +102,12 @@ export const AppointmentProvider = ({ children }) => {
       localStorage.setItem(STORAGE_KEYS.SPECIALISTS, JSON.stringify(specialists));
     } catch (e) {}
   }, [specialists]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_ROLE, currentRole.id);
+    } catch (e) {}
+  }, [currentRole]);
 
   useEffect(() => {
     try {
@@ -121,6 +138,29 @@ export const AppointmentProvider = ({ children }) => {
   const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  // Role Switcher
+  const switchRole = useCallback((roleId) => {
+    const targetRole = SYSTEM_ROLES[roleId];
+    if (!targetRole) return;
+
+    setCurrentRole(targetRole);
+
+    // If current view is not allowed for the new role, automatically navigate to default view
+    if (!targetRole.allowedViews.includes(currentView)) {
+      setCurrentView(targetRole.defaultView);
+    }
+
+    showToast(`Switched active role: ${targetRole.roleLabel}`, "info", 3500);
+  }, [currentView, showToast]);
+
+  const hasPermission = useCallback((permissionKey) => {
+    return Boolean(currentRole?.permissions?.[permissionKey]);
+  }, [currentRole]);
+
+  const canAccessView = useCallback((viewId) => {
+    return currentRole?.allowedViews?.includes(viewId);
+  }, [currentRole]);
 
   // Modal helpers
   const openDetailModal = useCallback((appointment) => {
@@ -263,6 +303,12 @@ export const AppointmentProvider = ({ children }) => {
   }, [showToast]);
 
   const deleteAppointment = useCallback((id) => {
+    // Check permission
+    if (!hasPermission("canDeleteAppointments")) {
+      showToast("⛔ Permission Denied: Only Clinic Administrators can delete appointments.", "error", 4000);
+      return;
+    }
+
     const apt = appointments.find((a) => a.id === id);
     const clientName = apt ? (apt.clientName || apt.name) : "Appointment";
 
@@ -280,12 +326,12 @@ export const AppointmentProvider = ({ children }) => {
         }
       }
     });
-  }, [appointments, requestConfirm, showToast, activeModalAppointment, closeDetailModal, closeEditModal]);
+  }, [appointments, hasPermission, requestConfirm, showToast, activeModalAppointment, closeDetailModal, closeEditModal]);
 
   const loadDemoData = useCallback(() => {
     requestConfirm({
       title: "Load Sample Portfolio Data",
-      message: "This will populate the system with 16 realistic medical appointments, across multiple specialists and services. Current appointments will be refreshed.",
+      message: "This will populate the system with 16 realistic medical appointments across multiple specialists and services. Current appointments will be refreshed.",
       confirmText: "Load Demo Data",
       isDanger: false,
       onConfirm: () => {
@@ -299,6 +345,11 @@ export const AppointmentProvider = ({ children }) => {
   }, [requestConfirm, showToast]);
 
   const clearAllAppointments = useCallback(() => {
+    if (!hasPermission("canBackupRestore")) {
+      showToast("⛔ Permission Denied: Only Clinic Administrators can clear database records.", "error", 4000);
+      return;
+    }
+
     requestConfirm({
       title: "Clear All Appointments",
       message: "Are you sure you want to remove all appointments from storage? This cannot be undone.",
@@ -309,9 +360,14 @@ export const AppointmentProvider = ({ children }) => {
         showToast("🧹 All appointment records cleared", "info");
       }
     });
-  }, [requestConfirm, showToast]);
+  }, [hasPermission, requestConfirm, showToast]);
 
   const importBackupData = useCallback((backupData) => {
+    if (!hasPermission("canBackupRestore")) {
+      showToast("⛔ Permission Denied: Only Clinic Administrators can restore database backups.", "error", 4000);
+      return;
+    }
+
     try {
       if (!backupData || !Array.isArray(backupData.appointments)) {
         throw new Error("Invalid structure: missing appointments array");
@@ -323,7 +379,7 @@ export const AppointmentProvider = ({ children }) => {
     } catch (e) {
       showToast(`❌ Import error: ${e.message}`, "error");
     }
-  }, [showToast]);
+  }, [hasPermission, showToast]);
 
   const value = {
     appointments,
@@ -331,6 +387,10 @@ export const AppointmentProvider = ({ children }) => {
     specialists,
     darkMode,
     setDarkMode,
+    currentRole,
+    switchRole,
+    hasPermission,
+    canAccessView,
     currentView,
     setCurrentView,
     selectedDate,

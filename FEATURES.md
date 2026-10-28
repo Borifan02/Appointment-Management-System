@@ -59,7 +59,17 @@
 - **JSON Backup Restore**: Upload and validation of backup files.
 - **CSV Export**: Formatted RFC-4180 CSV export of all filtered appointments.
 
-## 10. Modern UX & Design System
+## 10. Role-Based Access Control (RBAC) System
+- **Interactive Persona Switcher**: Top navigation dropdown allowing recruiters and reviewers to test the app as:
+  1. **🛡️ Clinic Administrator (Dr. Catherine Hayes)**: Unrestricted access to operations, financial revenue, all patient records, doctor rosters, and database management.
+  2. **👨‍⚕️ Physician / Doctor (Dr. Evelyn Reed)**: Access restricted to personal consultation calendar and assigned patients; includes full clinical diagnosis and case notes editing; hides clinic revenue and database wiping.
+  3. **📋 Receptionist / Front Desk (Sarah Jenkins)**: Front-desk operational view to check in patients, manage today's schedule timeline, schedule visits, and print visit slips; hides financial revenue analytics and delete permissions.
+  4. **👤 Patient Client Portal (Eleanor Vance)**: Client self-service portal displaying active upcoming visit passes, personal visit history, 1-click `.ics` calendar downloads, and self-service booking; isolates other patients' confidential data and internal clinical notes.
+- **Route & View Authorization**: Dynamic view guards intercepting unauthorized attempts to access sensitive screens.
+- **Permission Guards**: Real-time permission checking (`canDeleteAppointments`, `canViewFinancials`, `canEditClinicalNotes`, `canBackupRestore`).
+
+## 11. Modern UX & Design System
 - **Dark & Light Mode**: High-contrast, eye-friendly themes with persisted preferences.
 - **Glassmorphic Feedback Modals**: Smooth animated modals with keyboard Esc and backdrop click handling.
 - **Toast Notifications Portal**: Non-intrusive notifications for create, edit, reschedule, and delete operations.
+

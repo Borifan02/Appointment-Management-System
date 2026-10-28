@@ -10,6 +10,7 @@ import AppointmentsTable from "./components/appointments/AppointmentsTable";
 import ClientBookingWizard from "./components/booking/ClientBookingWizard";
 import StaffAndServices from "./components/roster/StaffAndServices";
 import AnalyticsView from "./components/analytics/AnalyticsView";
+import PatientPortalView from "./components/patient/PatientPortalView";
 
 // Modals & Notifications
 import AppointmentDetailModal from "./components/appointments/AppointmentDetailModal";
@@ -54,6 +55,8 @@ const MainAppLayout = () => {
 
         {/* Main Dynamic Viewport */}
         <main className="main-content-area">
+          {currentView === "patient-portal" && <PatientPortalView />}
+
           {currentView === "dashboard" && <DashboardOverview />}
 
           {currentView === "calendar" && (
@@ -72,10 +75,10 @@ const MainAppLayout = () => {
           {currentView === "roster" && (
             <StaffAndServices
               onSelectSpecialistForBooking={(specId) => {
-                // can trigger wizard prefill
+                // optional prefill hook
               }}
               onSelectServiceForBooking={(srvId) => {
-                // can trigger wizard prefill
+                // optional prefill hook
               }}
             />
           )}

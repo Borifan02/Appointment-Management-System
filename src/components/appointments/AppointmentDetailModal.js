@@ -17,13 +17,14 @@ const AppointmentDetailModal = () => {
     updateAppointment,
     openEditModal,
     openReceiptModal,
-    deleteAppointment
+    deleteAppointment,
+    hasPermission,
+    currentRole
   } = useAppointments();
 
   const [notes, setNotes] = useState(activeModalAppointment?.notes || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
-  // Sync state if modal appointment changes
   React.useEffect(() => {
     if (activeModalAppointment) {
       setNotes(activeModalAppointment.notes || "");
@@ -41,11 +42,14 @@ const AppointmentDetailModal = () => {
     setTimeout(() => setIsSavingNotes(false), 500);
   };
 
-  // WhatsApp link generator (removes non-digits)
   const cleanPhone = (apt.phone || "").replace(/\D/g, "");
   const whatsappUrl = cleanPhone
     ? `https://wa.me/${cleanPhone}?text=Hello%20${encodeURIComponent(apt.clientName || "")},%20this%20is%20MediCare%20Hub%20regarding%20your%20appointment%20on%20${apt.date}%20at%20${apt.time}.`
     : null;
+
+  const canEditNotes = hasPermission("canEditClinicalNotes");
+  const canDelete = hasPermission("canDeleteAppointments");
+  const canChangeStatus = hasPermission("canChangeStatus");
 
   return (
     <div className="modal-backdrop" onClick={closeDetailModal}>
@@ -84,7 +88,7 @@ const AppointmentDetailModal = () => {
               <div className="quick-comm-links">
                 {apt.email && (
                   <a href={`mailto:${apt.email}`} className="btn-comm-pill">
-                    ✉️ Email Patient
+                    ✉️ Email
                   </a>
                 )}
                 {apt.phone && (
@@ -164,70 +168,85 @@ const AppointmentDetailModal = () => {
           <div className="detail-section-card">
             <div className="section-title-row">
               <h4>📝 Clinical Observations & Notes</h4>
-              <button
-                className="btn btn-secondary btn-xs"
-                onClick={handleSaveNotes}
-                disabled={isSavingNotes}
-              >
-                {isSavingNotes ? "Saving..." : "Save Notes"}
-              </button>
+              {canEditNotes ? (
+                <button
+                  className="btn btn-secondary btn-xs"
+                  onClick={handleSaveNotes}
+                  disabled={isSavingNotes}
+                >
+                  {isSavingNotes ? "Saving..." : "Save Notes"}
+                </button>
+              ) : (
+                <span className="role-locked-pill">🔒 Physician / Admin Only</span>
+              )}
             </div>
-            <textarea
-              className="notes-textarea"
-              rows={3}
-              placeholder="Record doctor notes, diagnosis, symptoms, or special instructions here..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+            {canEditNotes ? (
+              <textarea
+                className="notes-textarea"
+                rows={3}
+                placeholder="Record diagnosis, symptoms, or instructions here..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            ) : (
+              <p className="notes-read-only">
+                {apt.notes ? apt.notes : "No clinical notes entered yet for this consultation."}
+              </p>
+            )}
           </div>
 
-          {/* Quick Status Updater */}
-          <div className="detail-status-strip">
-            <span className="strip-label">Quick Update Status:</span>
-            <div className="status-buttons-row">
-              <button
-                className={`btn-status-pill ${apt.status === "confirmed" ? "active" : ""}`}
-                onClick={() => updateStatus(apt.id, "confirmed")}
-              >
-                ✓ Confirmed
-              </button>
-              <button
-                className={`btn-status-pill ${apt.status === "in-progress" ? "active" : ""}`}
-                onClick={() => updateStatus(apt.id, "in-progress")}
-              >
-                ▶ In-Progress
-              </button>
-              <button
-                className={`btn-status-pill ${apt.status === "completed" ? "active" : ""}`}
-                onClick={() => updateStatus(apt.id, "completed")}
-              >
-                ✅ Completed
-              </button>
-              <button
-                className={`btn-status-pill ${apt.status === "cancelled" ? "active" : ""}`}
-                onClick={() => updateStatus(apt.id, "cancelled")}
-              >
-                ✕ Cancelled
-              </button>
-              <button
-                className={`btn-status-pill ${apt.status === "no-show" ? "active" : ""}`}
-                onClick={() => updateStatus(apt.id, "no-show")}
-              >
-                ⚠️ No-Show
-              </button>
+          {/* Quick Status Updater (If permitted) */}
+          {canChangeStatus && (
+            <div className="detail-status-strip">
+              <span className="strip-label">Update Status:</span>
+              <div className="status-buttons-row">
+                <button
+                  className={`btn-status-pill ${apt.status === "confirmed" ? "active" : ""}`}
+                  onClick={() => updateStatus(apt.id, "confirmed")}
+                >
+                  ✓ Confirmed
+                </button>
+                <button
+                  className={`btn-status-pill ${apt.status === "in-progress" ? "active" : ""}`}
+                  onClick={() => updateStatus(apt.id, "in-progress")}
+                >
+                  ▶ In-Progress
+                </button>
+                <button
+                  className={`btn-status-pill ${apt.status === "completed" ? "active" : ""}`}
+                  onClick={() => updateStatus(apt.id, "completed")}
+                >
+                  ✅ Completed
+                </button>
+                <button
+                  className={`btn-status-pill ${apt.status === "cancelled" ? "active" : ""}`}
+                  onClick={() => updateStatus(apt.id, "cancelled")}
+                >
+                  ✕ Cancelled
+                </button>
+                <button
+                  className={`btn-status-pill ${apt.status === "no-show" ? "active" : ""}`}
+                  onClick={() => updateStatus(apt.id, "no-show")}
+                >
+                  ⚠️ No-Show
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Modal Footer */}
         <div className="modal-footer">
           <div className="footer-left">
-            <button
-              className="btn btn-danger btn-sm"
-              onClick={() => deleteAppointment(apt.id)}
-            >
-              🗑️ Delete
-            </button>
+            {canDelete && (
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => deleteAppointment(apt.id)}
+                title="Admin Delete"
+              >
+                🗑️ Delete
+              </button>
+            )}
           </div>
           <div className="footer-right">
             <button
@@ -243,15 +262,17 @@ const AppointmentDetailModal = () => {
             >
               🖨️ Print Slip
             </button>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => {
-                closeDetailModal();
-                openEditModal(apt);
-              }}
-            >
-              ✏️ Edit / Reschedule
-            </button>
+            {currentRole.id !== "patient" && (
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  closeDetailModal();
+                  openEditModal(apt);
+                }}
+              >
+                ✏️ Edit / Reschedule
+              </button>
+            )}
             <button className="btn btn-primary btn-sm" onClick={closeDetailModal}>
               Close
             </button>

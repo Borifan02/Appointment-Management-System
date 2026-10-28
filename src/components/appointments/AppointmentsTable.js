@@ -14,6 +14,8 @@ const AppointmentsTable = () => {
   const {
     appointments,
     specialists,
+    currentRole,
+    hasPermission,
     updateStatus,
     deleteAppointment,
     openDetailModal,
@@ -23,10 +25,13 @@ const AppointmentsTable = () => {
     loadDemoData
   } = useAppointments();
 
+  // If active role is a doctor, default specialist filter to that doctor
+  const defaultSpecialist = currentRole.specialistId || "all";
+
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [specialistFilter, setSpecialistFilter] = useState("all");
+  const [specialistFilter, setSpecialistFilter] = useState(defaultSpecialist);
   const [dateFilter, setDateFilter] = useState("all"); // 'all', 'today', 'upcoming', 'past'
   const [sortBy, setSortBy] = useState("date-asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,9 +57,10 @@ const AppointmentsTable = () => {
         // Status filter
         const matchesStatus = statusFilter === "all" || apt.status === statusFilter;
 
-        // Specialist filter
+        // Specialist filter (locked if doctor role)
+        const effectiveSpecialistFilter = currentRole.specialistId || specialistFilter;
         const matchesSpecialist =
-          specialistFilter === "all" || apt.specialistId === specialistFilter;
+          effectiveSpecialistFilter === "all" || apt.specialistId === effectiveSpecialistFilter;
 
         // Date filter
         let matchesDate = true;
@@ -86,7 +92,7 @@ const AppointmentsTable = () => {
         }
         return 0;
       });
-  }, [appointments, searchTerm, statusFilter, specialistFilter, dateFilter, sortBy, todayStr]);
+  }, [appointments, searchTerm, statusFilter, specialistFilter, dateFilter, sortBy, todayStr, currentRole.specialistId]);
 
   // Pagination calculation
   const totalItems = filteredAndSorted.length;
@@ -104,7 +110,7 @@ const AppointmentsTable = () => {
   const handleResetFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
-    setSpecialistFilter("all");
+    setSpecialistFilter(currentRole.specialistId || "all");
     setDateFilter("all");
     setSortBy("date-asc");
     setCurrentPage(1);
@@ -119,6 +125,11 @@ const AppointmentsTable = () => {
           <span className="count-pill">
             Showing {filteredAndSorted.length} of {appointments.length}
           </span>
+          {currentRole.specialistId && (
+            <span className="role-filter-indicator">
+              Filtered for: <strong>{currentRole.name}</strong>
+            </span>
+          )}
         </div>
 
         <div className="registry-header-actions">
@@ -171,22 +182,26 @@ const AppointmentsTable = () => {
             <option value="no-show">No-Show</option>
           </select>
 
-          {/* Specialist filter */}
-          <select
-            className="filter-select"
-            value={specialistFilter}
-            onChange={(e) => {
-              setSpecialistFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="all">All Specialists</option>
-            {specialists.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+          {/* Specialist filter (Disabled if doctor role) */}
+          {!currentRole.specialistId ? (
+            <select
+              className="filter-select"
+              value={specialistFilter}
+              onChange={(e) => {
+                setSpecialistFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="all">All Specialists</option>
+              {specialists.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="filter-locked-badge">👨‍⚕️ {currentRole.name}</span>
+          )}
 
           {/* Date range filter */}
           <select
@@ -216,7 +231,7 @@ const AppointmentsTable = () => {
             <option value="status">By Status</option>
           </select>
 
-          {(searchTerm || statusFilter !== "all" || specialistFilter !== "all" || dateFilter !== "all") && (
+          {(searchTerm || statusFilter !== "all" || (!currentRole.specialistId && specialistFilter !== "all") || dateFilter !== "all") && (
             <button className="btn-link-reset" onClick={handleResetFilters}>
               Reset Filters
             </button>
@@ -234,9 +249,11 @@ const AppointmentsTable = () => {
             <button className="btn btn-secondary" onClick={handleResetFilters}>
               Reset Filters
             </button>
-            <button className="btn btn-primary" onClick={loadDemoData}>
-              Load Sample Data
-            </button>
+            {hasPermission("canBackupRestore") && (
+              <button className="btn btn-primary" onClick={loadDemoData}>
+                Load Sample Data
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -374,13 +391,16 @@ const AppointmentsTable = () => {
                           🖨️
                         </button>
 
-                        <button
-                          className="btn-icon-action btn-icon-delete"
-                          onClick={() => deleteAppointment(apt.id)}
-                          title="Delete appointment"
-                        >
-                          🗑️
-                        </button>
+                        {/* Delete button only visible to users with permission (Admin) */}
+                        {hasPermission("canDeleteAppointments") && (
+                          <button
+                            className="btn-icon-action btn-icon-delete"
+                            onClick={() => deleteAppointment(apt.id)}
+                            title="Delete appointment (Admin only)"
+                          >
+                            🗑️
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

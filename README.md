@@ -16,13 +16,14 @@
 
 ### 💼 Why This Stands Out in a Developer Portfolio
 1. **Interactive Monthly Calendar & Hourly Timeline**: Custom 35/42-cell calendar grid with status pills, day-level schedule inspection, and 8:00 AM – 6:00 PM hourly slot timelines with click-to-book capabilities.
-2. **Conflict Detection & Smart Availability Engine**: Real-time overlapping interval calculations (`[start1, end1]` vs `[start2, end2]`) preventing physician double-booking based on customized working hours and appointment durations.
-3. **5-Step Client Self-Service Booking Wizard**: Multi-step booking experience featuring dynamic doctor matching, real-time slot generation, patient intake form, and immediate confirmation with reference code.
-4. **iCalendar (.ICS) Standard Protocol**: Generates standard RFC-5545 `.ics` event files on the fly, allowing patients to import appointments directly into **Google Calendar**, **Apple Calendar**, and **Microsoft Outlook**.
-5. **Printable Official Visit Slip / Receipt**: Styled printable appointment pass featuring clinic branding, patient details, fee breakdown, consultation room, and simulated SVG barcode.
-6. **Analytics & Financial Dashboard**: Executive KPI cards, real-time revenue calculations, visual segmented progress bar for status distribution, peak-hours heatmap (morning/afternoon/evening), and provider workload charts.
-7. **Comprehensive Registry with Multi-Filters & Pagination**: Instant debounce-free search, status dropdowns, specialist filters, date ranges (Today, Upcoming, Past), sorting (Date, Name, Fee, Status), and pagination (5/10/20 per page).
-8. **100% Automated Test Coverage**: Unit and integration test suite covering calendar utilities, time conversions, overlap algorithms, conflict detection, and UI view switching.
+2. **Role-Based Access Control (RBAC) Architecture**: 4 interactive personas (**🛡️ Clinic Admin**, **👨‍⚕️ Physician / Doctor**, **📋 Receptionist / Front Desk**, **👤 Patient Client Portal**) with dedicated permission-gated navigation, data isolation, and a 1-click persona switcher in the navbar.
+3. **Conflict Detection & Smart Availability Engine**: Real-time overlapping interval calculations (`[start1, end1]` vs `[start2, end2]`) preventing physician double-booking based on customized working hours and appointment durations.
+4. **5-Step Client Self-Service Booking Wizard**: Multi-step booking experience featuring dynamic doctor matching, real-time slot generation, patient intake form, and immediate confirmation with reference code.
+5. **iCalendar (.ICS) Standard Protocol**: Generates standard RFC-5545 `.ics` event files on the fly, allowing patients to import appointments directly into **Google Calendar**, **Apple Calendar**, and **Microsoft Outlook**.
+6. **Printable Official Visit Slip / Receipt**: Styled printable appointment pass featuring clinic branding, patient details, fee breakdown, consultation room, and simulated SVG barcode.
+7. **Analytics & Financial Dashboard**: Executive KPI cards, real-time revenue calculations, visual segmented progress bar for status distribution, peak-hours heatmap (morning/afternoon/evening), and provider workload charts.
+8. **Comprehensive Registry with Multi-Filters & Pagination**: Instant debounce-free search, status dropdowns, specialist filters, date ranges (Today, Upcoming, Past), sorting (Date, Name, Fee, Status), and pagination (5/10/20 per page).
+9. **100% Automated Test Coverage**: Unit and integration test suite (15 passed tests) covering calendar utilities, time conversions, overlap algorithms, conflict detection, and RBAC view switching.
 
 ---
 
@@ -150,7 +151,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 npm test -- --watchAll=false
 ```
 
-All 13 test suites will run and output verification results.
+All 15 automated tests will run and output verification results.
 
 ### Production Build
 

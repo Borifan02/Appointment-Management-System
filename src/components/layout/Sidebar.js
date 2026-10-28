@@ -10,20 +10,28 @@ const Sidebar = ({ isOpen, onCloseMobileMenu }) => {
     appointments,
     services,
     specialists,
+    currentRole,
+    canAccessView,
+    hasPermission,
     importBackupData,
     clearAllAppointments
   } = useAppointments();
 
   const fileInputRef = useRef(null);
 
-  const navItems = [
+  // All possible navigation items
+  const allNavItems = [
+    { id: "patient-portal", label: "My Patient Portal", icon: "👤", badge: "Personal" },
     { id: "dashboard", label: "Executive Dashboard", icon: "📊", badge: null },
     { id: "calendar", label: "Interactive Calendar", icon: "📅", badge: "Live" },
     { id: "appointments", label: "Appointments Registry", icon: "📋", badge: appointments.length },
     { id: "booking", label: "Book Appointment Wizard", icon: "✍️", badge: "New" },
     { id: "roster", label: "Specialists & Services", icon: "👨‍⚕️", badge: specialists.length },
-    { id: "analytics", label: "Analytics & Reports", icon: "📈", badge: null }
+    { id: "analytics", label: "Analytics & Reports", icon: "📈", badge: "Admin" }
   ];
+
+  // Filter navigation items by current role's allowed views
+  const allowedNavItems = allNavItems.filter((item) => canAccessView(item.id));
 
   const handleNavClick = (viewId) => {
     setCurrentView(viewId);
@@ -33,7 +41,7 @@ const Sidebar = ({ isOpen, onCloseMobileMenu }) => {
   const handleExportBackup = () => {
     const backupState = {
       exportedAt: new Date().toISOString(),
-      version: "2.0.0",
+      version: "2.4.0",
       appointments,
       services,
       specialists
@@ -51,15 +59,25 @@ const Sidebar = ({ isOpen, onCloseMobileMenu }) => {
         alert("Failed to restore: " + err.message);
       }
     }
-    // reset input so the same file can be selected again
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
     <aside className={`main-sidebar ${isOpen ? "open" : ""}`}>
-      <div className="sidebar-section-title">MAIN NAVIGATION</div>
+      {/* Active User Card */}
+      <div className="sidebar-role-indicator-card">
+        <img src={currentRole.avatar} alt={currentRole.name} className="sidebar-user-avatar" />
+        <div className="sidebar-user-info">
+          <span className="sidebar-user-name">{currentRole.name}</span>
+          <span className={`role-badge-chip ${currentRole.badgeClass}`}>
+            {currentRole.icon} {currentRole.roleLabel}
+          </span>
+        </div>
+      </div>
+
+      <div className="sidebar-section-title">AUTHORIZED MODULES</div>
       <nav className="sidebar-nav">
-        {navItems.map((item) => {
+        {allowedNavItems.map((item) => {
           const isActive = currentView === item.id;
           return (
             <button
@@ -70,7 +88,11 @@ const Sidebar = ({ isOpen, onCloseMobileMenu }) => {
               <span className="nav-item-icon">{item.icon}</span>
               <span className="nav-item-label">{item.label}</span>
               {item.badge !== null && (
-                <span className={`nav-item-badge ${item.id === "booking" ? "badge-accent" : ""}`}>
+                <span
+                  className={`nav-item-badge ${
+                    item.id === "booking" || item.id === "patient-portal" ? "badge-accent" : ""
+                  }`}
+                >
                   {item.badge}
                 </span>
               )}
@@ -79,48 +101,62 @@ const Sidebar = ({ isOpen, onCloseMobileMenu }) => {
         })}
       </nav>
 
-      <div className="sidebar-divider" />
+      {/* Admin-only Database Tools */}
+      {hasPermission("canBackupRestore") && (
+        <>
+          <div className="sidebar-divider" />
+          <div className="sidebar-section-title">ADMIN DATA MANAGEMENT</div>
+          <div className="sidebar-actions">
+            <button
+              className="sidebar-btn-action"
+              onClick={handleExportBackup}
+              title="Download a full JSON backup of appointments"
+            >
+              <span>💾</span> Export Backup JSON
+            </button>
 
-      <div className="sidebar-section-title">DATA MANAGEMENT</div>
-      <div className="sidebar-actions">
-        <button
-          className="sidebar-btn-action"
-          onClick={handleExportBackup}
-          title="Download a full JSON backup of all appointments and configurations"
-        >
-          <span>💾</span> Export Backup JSON
-        </button>
+            <button
+              className="sidebar-btn-action"
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              title="Restore appointments from a saved JSON backup"
+            >
+              <span>📥</span> Import Backup JSON
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              style={{ display: "none" }}
+              onChange={handleImportFileChange}
+            />
 
-        <button
-          className="sidebar-btn-action"
-          onClick={() => fileInputRef.current && fileInputRef.current.click()}
-          title="Restore appointments from a saved JSON backup"
-        >
-          <span>📥</span> Import Backup JSON
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          style={{ display: "none" }}
-          onChange={handleImportFileChange}
-        />
+            <button
+              className="sidebar-btn-action sidebar-btn-danger"
+              onClick={clearAllAppointments}
+              title="Reset appointment database"
+            >
+              <span>🧹</span> Clear All Data
+            </button>
+          </div>
+        </>
+      )}
 
-        <button
-          className="sidebar-btn-action sidebar-btn-danger"
-          onClick={clearAllAppointments}
-          title="Reset appointment database"
-        >
-          <span>🧹</span> Clear All Data
-        </button>
-      </div>
-
+      {/* Role Permissions Brief */}
       <div className="sidebar-footer">
+        <div className="permissions-summary-box">
+          <span className="permissions-title">ROLE ACCESS LEVEL:</span>
+          <p className="permissions-desc">
+            {currentRole.id === "admin" && "Full administrative privileges & financial access"}
+            {currentRole.id === "doctor" && "Restricted to Dr. Evelyn Reed's schedule & clinical notes"}
+            {currentRole.id === "receptionist" && "Patient intake & scheduling (financials restricted)"}
+            {currentRole.id === "patient" && "Client self-service portal & personal passes only"}
+          </p>
+        </div>
+
         <div className="system-pill">
           <span className="pulse-dot" />
-          <span>v2.4 Enterprise Edition</span>
+          <span>RBAC v2.4 Active</span>
         </div>
-        <p className="system-author">Portfolio Showcase Build</p>
       </div>
     </aside>
   );

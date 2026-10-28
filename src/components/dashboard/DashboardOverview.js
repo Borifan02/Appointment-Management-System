@@ -8,6 +8,8 @@ const DashboardOverview = () => {
   const {
     appointments,
     specialists,
+    currentRole,
+    hasPermission,
     setCurrentView,
     openDetailModal,
     updateStatus,
@@ -16,16 +18,21 @@ const DashboardOverview = () => {
 
   const todayStr = toISODate(new Date());
 
-  // Metrics
-  const total = appointments.length;
-  const todayApts = appointments.filter((a) => a.date === todayStr);
-  const completedApts = appointments.filter((a) => a.status === "completed");
-  const pendingApts = appointments.filter((a) => a.status === "pending");
-  const confirmedApts = appointments.filter((a) => a.status === "confirmed");
-  const cancelledApts = appointments.filter((a) => a.status === "cancelled");
+  // Filter appointments if active role is a Doctor
+  const roleFilteredAppointments = currentRole.specialistId
+    ? appointments.filter((a) => a.specialistId === currentRole.specialistId)
+    : appointments;
 
-  // Estimated Revenue: completed + confirmed
-  const totalRevenue = appointments
+  // Metrics
+  const total = roleFilteredAppointments.length;
+  const todayApts = roleFilteredAppointments.filter((a) => a.date === todayStr);
+  const completedApts = roleFilteredAppointments.filter((a) => a.status === "completed");
+  const pendingApts = roleFilteredAppointments.filter((a) => a.status === "pending");
+  const confirmedApts = roleFilteredAppointments.filter((a) => a.status === "confirmed");
+  const cancelledApts = roleFilteredAppointments.filter((a) => a.status === "cancelled");
+
+  // Estimated Revenue: Only calculated if role has financial visibility
+  const totalRevenue = roleFilteredAppointments
     .filter((a) => a.status === "completed" || a.status === "confirmed")
     .reduce((sum, a) => sum + (Number(a.price) || 0), 0);
 
@@ -35,42 +42,46 @@ const DashboardOverview = () => {
   const sortedTodayApts = [...todayApts].sort((a, b) => a.time.localeCompare(b.time));
 
   // Upcoming appointments (dates > today)
-  const upcomingApts = appointments
+  const upcomingApts = roleFilteredAppointments
     .filter((a) => a.date > todayStr && a.status !== "cancelled")
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
     .slice(0, 5);
 
   const kpis = [
     {
-      title: "Total Bookings",
+      title: currentRole.id === "doctor" ? "Your Total Patients" : "Total Bookings",
       value: total,
       subtext: `${confirmedApts.length} confirmed, ${pendingApts.length} pending`,
       icon: "📊",
-      color: "var(--primary-color)",
       borderAccent: "#3b82f6"
     },
     {
       title: "Today's Schedule",
       value: todayApts.length,
-      subtext: `${todayApts.filter(a => a.status === "completed").length} served so far`,
+      subtext: `${todayApts.filter((a) => a.status === "completed").length} completed visits`,
       icon: "🗓️",
-      color: "#10b981",
       borderAccent: "#10b981"
     },
-    {
-      title: "Total Value / Revenue",
-      value: `$${totalRevenue.toLocaleString()}`,
-      subtext: `From confirmed & completed`,
-      icon: "💵",
-      color: "#8b5cf6",
-      borderAccent: "#8b5cf6"
-    },
+    hasPermission("canViewFinancials")
+      ? {
+          title: "Booked Revenue",
+          value: `$${totalRevenue.toLocaleString()}`,
+          subtext: "From confirmed & completed",
+          icon: "💵",
+          borderAccent: "#8b5cf6"
+        }
+      : {
+          title: "Pending Confirmations",
+          value: pendingApts.length,
+          subtext: "Action required",
+          icon: "⏳",
+          borderAccent: "#8b5cf6"
+        },
     {
       title: "Completion Rate",
       value: `${completionRate}%`,
-      subtext: `${cancelledApts.length} cancelled total`,
+      subtext: `${cancelledApts.length} cancellations`,
       icon: "🎯",
-      color: "#f59e0b",
       borderAccent: "#f59e0b"
     }
   ];
@@ -80,18 +91,31 @@ const DashboardOverview = () => {
       {/* Header Banner */}
       <div className="dashboard-hero">
         <div className="hero-text">
-          <h2>Clinical Operations Overview</h2>
-          <p>Real-time patient appointments, clinical schedule, and performance indicators.</p>
+          <div className="hero-role-tag">
+            <span className={`role-badge-chip ${currentRole.badgeClass}`}>
+              {currentRole.icon} ACTIVE VIEW: {currentRole.roleLabel.toUpperCase()}
+            </span>
+          </div>
+          <h2>
+            {currentRole.id === "doctor"
+              ? `Physician Clinical Schedule — ${currentRole.name}`
+              : "Clinical Operations Overview"}
+          </h2>
+          <p>
+            {currentRole.id === "doctor"
+              ? "Displaying personal consultations, patient medical records, and diagnostic schedule."
+              : "Real-time patient appointments, clinical schedule, and performance indicators."}
+          </p>
         </div>
         <div className="hero-actions">
           <button className="btn btn-primary" onClick={() => setCurrentView("booking")}>
-            <span>➕</span> Book New Appointment
+            <span>➕</span> Book Appointment
           </button>
           <button
             className="btn btn-outline"
-            onClick={() => exportAppointmentsToCSV(appointments, `appointments_export_${todayStr}.csv`)}
+            onClick={() => exportAppointmentsToCSV(roleFilteredAppointments, `appointments_export_${todayStr}.csv`)}
           >
-            <span>📥</span> Export CSV Report
+            <span>📥</span> Export CSV
           </button>
         </div>
       </div>
@@ -117,7 +141,9 @@ const DashboardOverview = () => {
           <div className="card-header">
             <div className="card-header-left">
               <h3>🕒 Today's Schedule ({sortedTodayApts.length})</h3>
-              <span className="card-subtitle">Patients scheduled for today</span>
+              <span className="card-subtitle">
+                {currentRole.id === "doctor" ? "Your patients scheduled for today" : "Patients scheduled for today across all doctors"}
+              </span>
             </div>
             <button className="btn-link" onClick={() => setCurrentView("calendar")}>
               Open Full Calendar →
@@ -128,15 +154,17 @@ const DashboardOverview = () => {
             {sortedTodayApts.length === 0 ? (
               <div className="empty-schedule-box">
                 <span className="empty-icon">📭</span>
-                <h4>No appointments on the books for today</h4>
-                <p>You can schedule a client for today or load our rich sample data to test workflows.</p>
+                <h4>No appointments scheduled for today</h4>
+                <p>Schedule a client for today or load sample data to test workflows.</p>
                 <div className="empty-buttons">
                   <button className="btn btn-primary btn-sm" onClick={() => setCurrentView("booking")}>
-                    Schedule Client Now
+                    Schedule Patient Now
                   </button>
-                  <button className="btn btn-secondary btn-sm" onClick={loadDemoData}>
-                    Load Sample Data
-                  </button>
+                  {currentRole.id === "admin" && (
+                    <button className="btn btn-secondary btn-sm" onClick={loadDemoData}>
+                      Load Sample Data
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -216,33 +244,35 @@ const DashboardOverview = () => {
 
         {/* Right Column: Specialists on Duty & Upcoming */}
         <div className="dashboard-right-column">
-          {/* Specialists Roster Card */}
-          <div className="dashboard-card specialists-preview-card">
-            <div className="card-header">
-              <h3>👨‍⚕️ Specialists on Duty</h3>
-              <button className="btn-link" onClick={() => setCurrentView("roster")}>
-                View Roster →
-              </button>
-            </div>
-            <div className="specialists-mini-list">
-              {specialists.slice(0, 4).map((spec) => {
-                const specTodayCount = todayApts.filter((a) => a.specialistId === spec.id).length;
-                return (
-                  <div key={spec.id} className="specialist-mini-item">
-                    <img src={spec.avatar} alt={spec.name} className="specialist-avatar-sm" />
-                    <div className="specialist-info">
-                      <h4 className="specialist-name">{spec.name}</h4>
-                      <p className="specialist-role">{spec.specialty}</p>
+          {/* Specialists Roster Card (Only visible to admin and receptionist) */}
+          {currentRole.id !== "doctor" && (
+            <div className="dashboard-card specialists-preview-card">
+              <div className="card-header">
+                <h3>👨‍⚕️ Specialists on Duty</h3>
+                <button className="btn-link" onClick={() => setCurrentView("roster")}>
+                  View Roster →
+                </button>
+              </div>
+              <div className="specialists-mini-list">
+                {specialists.slice(0, 4).map((spec) => {
+                  const specTodayCount = todayApts.filter((a) => a.specialistId === spec.id).length;
+                  return (
+                    <div key={spec.id} className="specialist-mini-item">
+                      <img src={spec.avatar} alt={spec.name} className="specialist-avatar-sm" />
+                      <div className="specialist-info">
+                        <h4 className="specialist-name">{spec.name}</h4>
+                        <p className="specialist-role">{spec.specialty}</p>
+                      </div>
+                      <div className="specialist-stats">
+                        <span className="badge-stat">{specTodayCount} today</span>
+                        <span className="rating-badge">★ {spec.rating}</span>
+                      </div>
                     </div>
-                    <div className="specialist-stats">
-                      <span className="badge-stat">{specTodayCount} today</span>
-                      <span className="rating-badge">★ {spec.rating}</span>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Upcoming Appointments Card */}
           <div className="dashboard-card upcoming-card">
