@@ -5,7 +5,13 @@
  * Provides seamless fallbacks to LocalStorage when running frontend-only.
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const getNormalizedApiUrl = () => {
+  const raw = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+  const cleaned = raw.trim().replace(/\/+$/, "");
+  return cleaned.endsWith("/api") ? cleaned : `${cleaned}/api`;
+};
+
+export const API_BASE_URL = getNormalizedApiUrl();
 
 const getAuthToken = () => {
   try {

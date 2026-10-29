@@ -5,6 +5,12 @@ import { INITIAL_SPECIALISTS } from "../data/specialists";
 import { getRealisticDemoAppointments } from "../data/demoData";
 import { SYSTEM_ROLES } from "../data/roles";
 import { checkAppointmentConflict, toISODate } from "../utils/calendarUtils";
+import {
+  isBackendAvailable,
+  appointmentService,
+  authService,
+  API_BASE_URL
+} from "../services/api";
 
 const AppointmentContext = createContext(null);
 
@@ -89,8 +95,35 @@ export const AppointmentProvider = ({ children }) => {
   // Confirmation Modal
   const [confirmConfig, setConfirmConfig] = useState(null);
 
+  // Cloud Backend Connectivity (Render + MongoDB)
+  const [isBackendOnline, setIsBackendOnline] = useState(false);
+
   // Toast notification queue
   const [toasts, setToasts] = useState([]);
+
+  // Check cloud backend connection & optionally hydrate from MongoDB
+  useEffect(() => {
+    let active = true;
+    const testConnection = async () => {
+      const online = await isBackendAvailable();
+      if (!active) return;
+      setIsBackendOnline(online);
+      if (online) {
+        try {
+          const cloudData = await appointmentService.getAll();
+          if (Array.isArray(cloudData) && cloudData.length > 0) {
+            setAppointments(cloudData);
+          }
+        } catch (e) {
+          console.warn("Backend online but failed to fetch cloud appointments:", e);
+        }
+      }
+    };
+    testConnection();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Sync to LocalStorage
   useEffect(() => {
@@ -211,8 +244,33 @@ export const AppointmentProvider = ({ children }) => {
   }, []);
 
   const login = useCallback(
-    (email, password) => {
+    async (email, password) => {
       const trimmedEmail = (email || "").trim().toLowerCase();
+
+      // If cloud backend is online, attempt real server auth first
+      if (isBackendOnline) {
+        try {
+          const serverRes = await authService.login(trimmedEmail, password);
+          if (serverRes && serverRes.success && serverRes.user) {
+            const baseRole = SYSTEM_ROLES[serverRes.user.role] || SYSTEM_ROLES.patient;
+            const cloudRole = {
+              ...baseRole,
+              name: serverRes.user.name,
+              email: serverRes.user.email,
+              phone: serverRes.user.phone || baseRole.phone,
+              specialistId: serverRes.user.specialistId || baseRole.specialistId,
+              clientEmail: serverRes.user.email
+            };
+            setCurrentRole(cloudRole);
+            setCurrentUser(cloudRole);
+            if (!cloudRole.allowedViews.includes(currentView)) {
+              setCurrentView(cloudRole.defaultView);
+            }
+            showToast(`☁️ Connected to Cloud: Welcome, ${cloudRole.name}!`, "success", 4000);
+            return { success: true, user: cloudRole };
+          }
+        } catch (e) {}
+      }
 
       // Check system roles demo users
       const matchedRole = Object.values(SYSTEM_ROLES).find(
@@ -257,13 +315,20 @@ export const AppointmentProvider = ({ children }) => {
         message: "No matching account found with that email. Try a demo account or click 'Create New Account'."
       };
     },
-    [currentView, showToast]
+    [currentView, showToast, isBackendOnline]
   );
 
   const signup = useCallback(
-    (userData) => {
-      const { name, email, phone, role = "patient" } = userData;
+    async (userData) => {
+      const { name, email, phone, role = "patient", password } = userData;
       const trimmedEmail = (email || "").trim().toLowerCase();
+
+      // If backend is online, attempt cloud registration
+      if (isBackendOnline) {
+        try {
+          await authService.register({ name, email: trimmedEmail, phone, role, password });
+        } catch (e) {}
+      }
 
       const newUser = {
         id: `usr-${Date.now()}`,
@@ -295,7 +360,7 @@ export const AppointmentProvider = ({ children }) => {
       showToast(`🎉 Welcome to MediCare Hub, ${name}! Your account is active.`, "success", 5000);
       return { success: true, user: customRole };
     },
-    [showToast]
+    [showToast, isBackendOnline]
   );
 
   const logout = useCallback(() => {
@@ -450,8 +515,16 @@ export const AppointmentProvider = ({ children }) => {
 
     setAppointments((prev) => [newAppointment, ...prev]);
     showToast(`✅ Appointment confirmed for ${newAppointment.clientName}! Reference: ${newAppointment.referenceCode}`, "success");
+
+    // Asynchronously push to Cloud MongoDB if backend is online
+    if (isBackendOnline) {
+      appointmentService.create(newAppointment).catch((err) => {
+        console.warn("Cloud appointment sync error:", err);
+      });
+    }
+
     return { success: true, appointment: newAppointment };
-  }, [appointments, specialists, services, showToast]);
+  }, [appointments, specialists, services, showToast, isBackendOnline]);
 
   const updateAppointment = useCallback((id, updatedData) => {
     const existing = appointments.find((a) => a.id === id);
@@ -494,15 +567,26 @@ export const AppointmentProvider = ({ children }) => {
 
     setAppointments(updatedList);
     showToast("✏️ Appointment updated successfully", "success");
+
+    // Asynchronously update in Cloud MongoDB
+    if (isBackendOnline) {
+      appointmentService.update(id, updatedData).catch(() => {});
+    }
+
     return { success: true };
-  }, [appointments, specialists, services, showToast]);
+  }, [appointments, specialists, services, showToast, isBackendOnline]);
 
   const updateStatus = useCallback((id, newStatus) => {
     setAppointments((prev) =>
       prev.map((apt) => (apt.id === id ? { ...apt, status: newStatus, updatedAt: new Date().toISOString() } : apt))
     );
     showToast(`Status changed to ${newStatus.toUpperCase()}`, "info");
-  }, [showToast]);
+
+    // Asynchronously update status in Cloud MongoDB
+    if (isBackendOnline) {
+      appointmentService.update(id, { status: newStatus }).catch(() => {});
+    }
+  }, [showToast, isBackendOnline]);
 
   const deleteAppointment = useCallback((id) => {
     // Check permission
@@ -522,13 +606,19 @@ export const AppointmentProvider = ({ children }) => {
       onConfirm: () => {
         setAppointments((prev) => prev.filter((a) => a.id !== id));
         showToast("🗑️ Appointment permanently removed", "info");
+
+        // Asynchronously delete from Cloud MongoDB
+        if (isBackendOnline) {
+          appointmentService.delete(id).catch(() => {});
+        }
+
         if (activeModalAppointment && activeModalAppointment.id === id) {
           closeDetailModal();
           closeEditModal();
         }
       }
     });
-  }, [appointments, hasPermission, requestConfirm, showToast, activeModalAppointment, closeDetailModal, closeEditModal]);
+  }, [appointments, hasPermission, requestConfirm, showToast, activeModalAppointment, closeDetailModal, closeEditModal, isBackendOnline]);
 
   const loadDemoData = useCallback(() => {
     requestConfirm({
@@ -589,6 +679,8 @@ export const AppointmentProvider = ({ children }) => {
     specialists,
     darkMode,
     setDarkMode,
+    isBackendOnline,
+    API_BASE_URL,
     currentRole,
     switchRole,
     hasPermission,

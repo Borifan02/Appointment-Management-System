@@ -31,15 +31,15 @@ const AuthModal = () => {
 
   if (!isAuthModalOpen) return null;
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
 
-    const res = login(loginEmail, loginPassword);
-    if (res.success) {
+    const res = await login(loginEmail, loginPassword);
+    if (res && res.success) {
       closeAuthModal();
     } else {
-      setLoginError(res.message || "Invalid email or password.");
+      setLoginError(res?.message || "Invalid email or password.");
     }
   };
 
@@ -59,11 +59,11 @@ const AuthModal = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     if (!validateRegister()) return;
 
-    const res = signup({
+    const res = await signup({
       name: regName,
       email: regEmail,
       phone: regPhone,
@@ -71,7 +71,7 @@ const AuthModal = () => {
       password: regPassword
     });
 
-    if (res.success) {
+    if (res && res.success) {
       closeAuthModal();
     }
   };

@@ -12,7 +12,8 @@ const Navbar = ({ onToggleMobileMenu, isMobileMenuOpen }) => {
     appointments,
     currentRole,
     switchRole,
-    openAuthModal
+    openAuthModal,
+    isBackendOnline
   } = useAppointments();
 
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
@@ -73,6 +74,18 @@ const Navbar = ({ onToggleMobileMenu, isMobileMenuOpen }) => {
           <span className="calendar-icon">🗓️</span>
           <span>Today: <strong>{todayStr}</strong></span>
           <span className="pill-count">{appointments.length} Bookings</span>
+        </div>
+
+        <div
+          className={`backend-status-pill ${isBackendOnline ? "status-cloud" : "status-local"}`}
+          title={
+            isBackendOnline
+              ? "Cloud API Connected (Render + MongoDB Atlas active)"
+              : "Standalone Mode (Local persistence active; set REACT_APP_API_URL on Vercel to connect to Render)"
+          }
+        >
+          <span className="status-dot" />
+          <span>{isBackendOnline ? "Cloud API Online" : "Local Database"}</span>
         </div>
       </div>
 
