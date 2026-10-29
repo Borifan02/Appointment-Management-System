@@ -16,12 +16,37 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Enable CORS
-const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+// Enable CORS with support for Vercel production and preview domains
+const configuredClientUrl = process.env.CLIENT_URL;
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  ...(configuredClientUrl
+    ? configuredClientUrl.split(",").map((s) => s.trim().replace(/\/$/, ""))
+    : [])
+];
+
 app.use(
   cors({
-    origin: [clientUrl, "http://localhost:3000", "http://127.0.0.1:3000"],
-    credentials: true
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server, Render health checks)
+      if (!origin) return callback(null, true);
+
+      // Allow if explicit match, or if any Vercel domain (*.vercel.app), or if CLIENT_URL is wildcard '*'
+      if (
+        process.env.CLIENT_URL === "*" ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
+        return callback(null, true);
+      }
+
+      // Permissive fallback so legitimate portfolio visitors are never blocked
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
 
