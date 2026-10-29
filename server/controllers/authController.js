@@ -150,6 +150,60 @@ exports.getDemoPersonas = (req, res) => {
   });
 };
 
+// @desc    Admin: Provision a new staff member (Doctor or Receptionist)
+// @route   POST /api/auth/provision-staff
+// @access  Private (Admin only)
+exports.provisionStaff = async (req, res) => {
+  try {
+    const { name, email, password, phone, role, specialistId } = req.body;
+
+    if (!["doctor", "receptionist"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Staff role must be either 'doctor' or 'receptionist'"
+      });
+    }
+
+    const userExists = await User.findOne({ email: email.toLowerCase() });
+    if (userExists) {
+      return res.status(400).json({
+        success: false,
+        message: "An account with this email address already exists"
+      });
+    }
+
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      password: password || "StaffWelcome2026!",
+      phone: phone || "",
+      role,
+      specialistId: role === "doctor" ? (specialistId || `spec-${Date.now()}`) : null,
+      avatar:
+        role === "doctor"
+          ? "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=120&auto=format&fit=crop&q=80"
+          : "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=120&auto=format&fit=crop&q=80"
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully provisioned ${role}: ${name}`,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        specialistId: user.specialistId
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "Failed to provision staff member"
+    });
+  }
+};
+
 // Helper function to get token from model, create cookie/JSON response
 const sendTokenResponse = (user, statusCode, res) => {
   const token = user.getSignedJwtToken();

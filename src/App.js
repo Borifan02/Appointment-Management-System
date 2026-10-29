@@ -17,6 +17,7 @@ import AppointmentDetailModal from "./components/appointments/AppointmentDetailM
 import EditAppointmentModal from "./components/appointments/EditAppointmentModal";
 import AppointmentReceipt from "./components/appointments/AppointmentReceipt";
 import AuthModal from "./components/auth/AuthModal";
+import AddStaffModal from "./components/admin/AddStaffModal";
 import ConfirmModal from "./components/common/ConfirmModal";
 import ToastContainer from "./components/common/Toast";
 
@@ -93,6 +94,7 @@ const MainAppLayout = () => {
       <EditAppointmentModal />
       <AppointmentReceipt />
       <AuthModal />
+      <AddStaffModal />
       <ConfirmModal />
 
       {/* Global Animated Toast Notifications */}

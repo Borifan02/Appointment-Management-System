@@ -3,7 +3,14 @@ import React, { useState } from "react";
 import { useAppointments } from "../../context/AppointmentContext";
 
 const StaffAndServices = ({ onSelectSpecialistForBooking, onSelectServiceForBooking }) => {
-  const { specialists, services, appointments, setCurrentView } = useAppointments();
+  const {
+    specialists,
+    services,
+    appointments,
+    setCurrentView,
+    hasPermission,
+    openAddStaffModal
+  } = useAppointments();
   const [activeTab, setActiveTab] = useState("specialists"); // 'specialists' | 'services'
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -30,19 +37,27 @@ const StaffAndServices = ({ onSelectSpecialistForBooking, onSelectServiceForBook
           <p>Explore healthcare practitioners, operational hours, and available clinical offerings.</p>
         </div>
 
-        <div className="roster-tabs-switch">
-          <button
-            className={`roster-tab-btn ${activeTab === "specialists" ? "active" : ""}`}
-            onClick={() => setActiveTab("specialists")}
-          >
-            Specialists Roster ({specialists.length})
-          </button>
-          <button
-            className={`roster-tab-btn ${activeTab === "services" ? "active" : ""}`}
-            onClick={() => setActiveTab("services")}
-          >
-            Services Catalog ({services.length})
-          </button>
+        <div className="roster-header-actions">
+          {hasPermission("canManageRoster") && (
+            <button className="btn btn-primary" onClick={openAddStaffModal}>
+              <span>👨‍⚕️</span> Provision Doctor / Staff
+            </button>
+          )}
+
+          <div className="roster-tabs-switch">
+            <button
+              className={`roster-tab-btn ${activeTab === "specialists" ? "active" : ""}`}
+              onClick={() => setActiveTab("specialists")}
+            >
+              Specialists Roster ({specialists.length})
+            </button>
+            <button
+              className={`roster-tab-btn ${activeTab === "services" ? "active" : ""}`}
+              onClick={() => setActiveTab("services")}
+            >
+              Services Catalog ({services.length})
+            </button>
+          </div>
         </div>
       </div>
 

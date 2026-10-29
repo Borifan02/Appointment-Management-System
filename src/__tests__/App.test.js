@@ -96,8 +96,19 @@ describe("Appointment Management System App", () => {
     // Switch to Register tab
     const registerTabBtn = screen.getByRole("button", { name: /Create New Account/i });
     fireEvent.click(registerTabBtn);
-    expect(screen.getByText(/Account Type \/ Role/i)).toBeInTheDocument();
-    expect(screen.getByText(/Patient Account/i)).toBeInTheDocument();
+    expect(screen.getByText(/Patient Portal Self-Registration/i)).toBeInTheDocument();
+    expect(screen.getByText(/Patient Account \(Public\)/i)).toBeInTheDocument();
+  });
+
+  test("allows Admin to open staff provisioning modal", () => {
+    render(<App />);
+    const provisionBtn = screen.getByRole("button", { name: /Provision Staff/i });
+    fireEvent.click(provisionBtn);
+
+    expect(screen.getByText(/Provision New Healthcare Staff/i)).toBeInTheDocument();
+    expect(screen.getByText(/Medical Doctor \/ Specialist/i)).toBeInTheDocument();
+    expect(screen.getByText(/Front Desk Receptionist/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/e\.g\. Dr\. Julian Croft/i)).toBeInTheDocument();
   });
 
   test("toggles dark mode", () => {

@@ -200,8 +200,22 @@ const AuthModal = () => {
           {/* Create Account Tab */}
           {authModalTab === "register" && (
             <form onSubmit={handleRegisterSubmit} className="auth-form-wrap">
+              {/* Patient Notice Banner */}
+              <div className="auth-register-banner mb-3">
+                <div className="banner-title-row">
+                  <span className="badge-pill-cyan">👤 Patient Portal Self-Registration</span>
+                </div>
+                <p className="banner-subtext">
+                  Register for instant 24/7 online consultation booking, visit calendar passes (.ICS), and personal visit history.
+                </p>
+                <div className="staff-security-callout">
+                  <span>🔒</span>
+                  <span><strong>Are you a Physician or Clinic Staff?</strong> Staff accounts are provisioned exclusively by the Clinic Administrator.</span>
+                </div>
+              </div>
+
               <div className="form-group mb-3">
-                <label className="input-label">Account Type / Role</label>
+                <label className="input-label">Account Category</label>
                 <div className="role-selector-radios">
                   <label className={`radio-pill ${regRole === "patient" ? "active" : ""}`}>
                     <input
@@ -211,7 +225,7 @@ const AuthModal = () => {
                       checked={regRole === "patient"}
                       onChange={() => setRegRole("patient")}
                     />
-                    <span>👤 Patient Account</span>
+                    <span>👤 Patient Account (Public)</span>
                   </label>
                   <label className={`radio-pill ${regRole === "doctor" ? "active" : ""}`}>
                     <input
@@ -221,7 +235,7 @@ const AuthModal = () => {
                       checked={regRole === "doctor"}
                       onChange={() => setRegRole("doctor")}
                     />
-                    <span>👨‍⚕️ Medical Doctor</span>
+                    <span>👨‍⚕️ Doctor (Testing)</span>
                   </label>
                   <label className={`radio-pill ${regRole === "receptionist" ? "active" : ""}`}>
                     <input
@@ -231,7 +245,7 @@ const AuthModal = () => {
                       checked={regRole === "receptionist"}
                       onChange={() => setRegRole("receptionist")}
                     />
-                    <span>📋 Front Desk Staff</span>
+                    <span>📋 Staff (Testing)</span>
                   </label>
                 </div>
               </div>

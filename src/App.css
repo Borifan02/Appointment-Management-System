@@ -4086,3 +4086,250 @@ body {
   }
 }
 
+/* ==========================================================================
+   ADMIN STAFF PROVISIONING MODAL & REGISTRATION BANNERS
+   ========================================================================== */
+.add-staff-modal-card {
+  max-width: 620px;
+  width: 95%;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
+
+.staff-modal-header {
+  padding: 22px 26px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(16, 185, 129, 0.1));
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.staff-modal-header-text h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 4px 0 2px 0;
+}
+
+.staff-modal-header-text p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.staff-modal-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+  text-transform: uppercase;
+}
+
+.staff-modal-body {
+  padding: 24px 26px;
+  max-height: 76vh;
+  overflow-y: auto;
+}
+
+.staff-role-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.staff-role-toggle-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background-color: var(--bg-card-subtle);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+}
+
+.staff-role-toggle-btn:hover {
+  border-color: var(--primary-light);
+  background-color: var(--bg-card);
+}
+
+.staff-role-toggle-btn.active {
+  border-color: var(--primary);
+  background-color: rgba(37, 99, 235, 0.08);
+}
+
+.toggle-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.toggle-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle-text strong {
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.toggle-text span {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.staff-schedule-box {
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.duty-hours-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time-field-wrap {
+  flex: 1;
+}
+
+.field-sublabel {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+
+.time-sep {
+  font-size: 1.1rem;
+  color: var(--text-subtle);
+  padding-top: 14px;
+}
+
+.days-pills-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.day-pill {
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.day-pill:hover {
+  border-color: var(--primary);
+  color: var(--text-main);
+}
+
+.day-pill.selected {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.input-help-text {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.staff-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Patient Registration Banner in AuthModal */
+.auth-register-banner {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(37, 99, 235, 0.08));
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+
+.badge-pill-cyan {
+  display: inline-block;
+  background-color: rgba(6, 182, 212, 0.15);
+  color: #0284c7;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  margin-bottom: 6px;
+}
+
+.banner-subtext {
+  font-size: 0.8rem;
+  color: var(--text-main);
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.staff-security-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  background-color: var(--bg-card);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-color);
+}
+
+/* Roster Header Actions */
+.roster-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.card-header-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.text-primary {
+  color: var(--primary) !important;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .staff-role-toggle-group {
+    grid-template-columns: 1fr;
+  }
+  .roster-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+}
+
+

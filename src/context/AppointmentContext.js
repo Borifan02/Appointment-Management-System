@@ -83,6 +83,9 @@ export const AppointmentProvider = ({ children }) => {
   const [authModalTab, setAuthModalTab] = useState("login");
   const [currentUser, setCurrentUser] = useState(() => currentRole);
 
+  // Admin Staff Provisioning Modal
+  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+
   // Confirmation Modal
   const [confirmConfig, setConfirmConfig] = useState(null);
 
@@ -302,6 +305,94 @@ export const AppointmentProvider = ({ children }) => {
     showToast("You have been signed out.", "info");
     setIsAuthModalOpen(true);
   }, [showToast]);
+
+  // Admin Staff Provisioning Helpers
+  const openAddStaffModal = useCallback(() => {
+    setIsAddStaffModalOpen(true);
+  }, []);
+
+  const closeAddStaffModal = useCallback(() => {
+    setIsAddStaffModalOpen(false);
+  }, []);
+
+  const addStaffMember = useCallback(
+    (staffData) => {
+      if (!hasPermission("canManageRoster")) {
+        showToast("⛔ Permission Denied: Only Clinic Administrators can provision staff accounts.", "error", 4000);
+        return { success: false, message: "Unauthorized" };
+      }
+
+      const {
+        name,
+        email,
+        phone,
+        role = "doctor",
+        password,
+        specialty = "General Medicine",
+        room = "Suite 101",
+        workingHours = { start: "09:00", end: "17:00" },
+        availableDays = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+      } = staffData;
+
+      const trimmedEmail = (email || "").trim().toLowerCase();
+
+      // Check if email already registered in custom users or demo roles
+      const savedUsers = JSON.parse(localStorage.getItem("medicare_registered_users") || "[]");
+      const isRoleEmail = Object.values(SYSTEM_ROLES).some((r) => r.email.toLowerCase() === trimmedEmail);
+      if (isRoleEmail || savedUsers.some((u) => u.email.toLowerCase() === trimmedEmail)) {
+        showToast("⚠️ An account with this email address already exists.", "error", 4000);
+        return { success: false, message: "Email already exists" };
+      }
+
+      let newSpecialistId = null;
+
+      if (role === "doctor") {
+        newSpecialistId = `spec-${Date.now()}`;
+        const newSpecialist = {
+          id: newSpecialistId,
+          name,
+          specialty,
+          role: "Consultant Physician",
+          room,
+          phone,
+          email: trimmedEmail,
+          avatar:
+            staffData.avatar ||
+            "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=120&auto=format&fit=crop&q=80",
+          workingHours,
+          availableDays,
+          rating: 5.0,
+          experience: "Senior Specialist",
+          bio: `${name} is an active practitioner specializing in ${specialty} at MediCare Hub.`
+        };
+
+        setSpecialists((prev) => [...prev, newSpecialist]);
+      }
+
+      // Create credentials in user storage
+      const newStaffUser = {
+        id: `usr-${Date.now()}`,
+        name,
+        email: trimmedEmail,
+        phone,
+        role,
+        specialistId: newSpecialistId,
+        password: password || "StaffWelcome2026!",
+        createdAt: new Date().toISOString()
+      };
+
+      localStorage.setItem("medicare_registered_users", JSON.stringify([...savedUsers, newStaffUser]));
+
+      showToast(
+        `🎉 Successfully provisioned ${role === "doctor" ? "Doctor" : "Front Desk Staff"}: ${name}!`,
+        "success",
+        6000
+      );
+
+      return { success: true, user: newStaffUser, specialistId: newSpecialistId };
+    },
+    [hasPermission, showToast]
+  );
 
   // Confirmation dialog
   const requestConfirm = useCallback(({ title, message, onConfirm, confirmText = "Confirm", isDanger = false }) => {
@@ -524,6 +615,10 @@ export const AppointmentProvider = ({ children }) => {
     setAuthModalTab,
     openAuthModal,
     closeAuthModal,
+    isAddStaffModalOpen,
+    openAddStaffModal,
+    closeAddStaffModal,
+    addStaffMember,
     currentUser,
     login,
     signup,

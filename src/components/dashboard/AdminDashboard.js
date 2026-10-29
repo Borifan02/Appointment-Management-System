@@ -11,7 +11,8 @@ const AdminDashboard = () => {
     setCurrentView,
     openDetailModal,
     updateStatus,
-    loadDemoData
+    loadDemoData,
+    openAddStaffModal
   } = useAppointments();
 
   const todayStr = toISODate(new Date());
@@ -77,6 +78,9 @@ const AdminDashboard = () => {
           <p>Real-time healthcare analytics, provider schedules, revenue generation, and administration.</p>
         </div>
         <div className="hero-actions">
+          <button className="btn btn-secondary" onClick={openAddStaffModal}>
+            <span>👨‍⚕️</span> Provision Staff
+          </button>
           <button className="btn btn-primary" onClick={() => setCurrentView("booking")}>
             <span>➕</span> Book New Consultation
           </button>
@@ -212,9 +216,14 @@ const AdminDashboard = () => {
           <div className="dashboard-card specialists-preview-card">
             <div className="card-header">
               <h3>👨‍⚕️ Specialists on Duty</h3>
-              <button className="btn-link" onClick={() => setCurrentView("roster")}>
-                View Roster →
-              </button>
+              <div className="card-header-actions-inline">
+                <button className="btn-link font-bold text-primary" onClick={openAddStaffModal}>
+                  + Add Doctor
+                </button>
+                <button className="btn-link" onClick={() => setCurrentView("roster")}>
+                  View Roster →
+                </button>
+              </div>
             </div>
             <div className="specialists-mini-list">
               {specialists.slice(0, 4).map((spec) => {
